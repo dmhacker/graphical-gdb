@@ -8,7 +8,7 @@ gg a.out
 
 ## Summary
 
-**gg** is a gdb wrapper that provides you with a helpful, pretty view of your program's current state. 
+**gg** (graphical gdb) is a gdb wrapper that provides you with a helpful, pretty view of your program's current state. 
 
 Running gg opens up a GUI that displays your program's stack, registers, variables, code, and assembly.  gg will also create an instance of gdb in your shell, which you can use to modify the state of your program. When you run commands like `break`, `run`, `step`, and `next`, the gg GUI will update accordingly.
 

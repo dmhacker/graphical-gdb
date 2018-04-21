@@ -12,34 +12,41 @@ int main(int argc, char ** argv) {
 
   // Open child process to gdb
   const redi::pstreams::pmode mode = 
-    redi::pstreams::pstdout|redi::pstreams::pstderr;  
-  redi::ipstream child("gdb", argv_vector, mode);
+    redi::pstreams::pstdin | 
+    redi::pstreams::pstdout |
+    redi::pstreams::pstderr;  
+  redi::pstream child("gdb", argv_vector, mode);
 
   // Buffers, other variables 
-  char buf[1024];
-  std::streamsize sz;
-  bool finished[2] = { false, false };
+  char buf[BUFSIZ];
+  std::streamsize bufsz;
+  bool cerr_eof = false;
+  bool cout_eof = false;
 
-  while (!finished[0] || !finished[1]) {
+  while (!cerr_eof|| !cout_eof) {
     // Process stderr (non-blocking)
-    if (!finished[0]) {
-      while ((sz = child.err().readsome(buf, sizeof(buf))) > 0)
-        std::cerr.write(buf, sz).flush();
+    if (!cerr_eof) {
+      while ((bufsz = child.err().readsome(buf, sizeof(buf))) > 0) {
+        std::cerr.write(buf, bufsz).flush();
+      }
       if (child.eof()) {
-        finished[0] = true;
-        if (!finished[1])
+        cerr_eof = true;
+        if (!cout_eof) {
           child.clear();
+        }
       }
     }
   
     // Process stdout (non-blocking)
-    if (!finished[1]) {
-      while ((sz = child.out().readsome(buf, sizeof(buf))) > 0)
-        std::cout.write(buf, sz).flush();
+    if (!cout_eof) {
+      while ((bufsz = child.out().readsome(buf, sizeof(buf))) > 0) {
+        std::cout.write(buf, bufsz).flush(); 
+      }
       if (child.eof()) {
-        finished[1] = true;
-        if (!finished[0])
-          child.clear();
+        cout_eof = true;
+        if (!cerr_eof) {
+          child.clear(); 
+        }
       }
     }
   }

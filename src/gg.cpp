@@ -1,26 +1,30 @@
 #include <iostream>
 #include "gg.hpp"
 
-#define MAX_INTRO_WRITES 3
-#define MAX_COMMAND_WRITES 6
-#define MAX_INTRO_TRIES 100000
-#define MAX_COMMAND_TRIES 1000
+#define MAX_READ_TRIES 1000
 
-void write_output(GDB & gdb, std::string & gdb_output, std::string & gdb_error, long times, long tries) {
-  for (long i = 0; i < times; i++) {
+const std::string gdb_prompt = "(gdb) ";
+
+void display(GDB & gdb, std::string & gdb_output, std::string & gdb_error) {
+  do {
+    // Break out of loop if process isn't running
+    if (!gdb.is_running()) {
+      break;
+    }
+
     // Clear string buffers 
     gdb_output.clear();
     gdb_error.clear();
 
     // Read from GDB to populate buffers
-    gdb.read_into(gdb_output, gdb_error, tries);
+    gdb.read_into(gdb_output, gdb_error, MAX_READ_TRIES);
 
     // Pass output to IO streams
     if (!gdb_error.empty() || !gdb_output.empty()) {
       std::cerr << gdb_error << std::flush;
       std::cout << gdb_output << std::flush;
     }
-  }
+  } while (gdb_output.find(gdb_prompt) == std::string::npos);
 }
 
 int main(int argc, char ** argv) {
@@ -40,18 +44,10 @@ int main(int argc, char ** argv) {
   std::string gdb_output;
   std::string gdb_error;
 
-  // Perform initial flush to display gdb introduction to user 
-  write_output(gdb, gdb_output, gdb_error, 1, MAX_INTRO_TRIES);
-
-  // If file and other arguments provided to gdb, print results from those
-  if (argv_vector.size()) {
-    write_output(gdb, gdb_output, gdb_error, MAX_INTRO_WRITES, MAX_INTRO_TRIES);
-  }
+  // Display gdb introduction to user 
+  display(gdb, gdb_output, gdb_error);
 
   while (gdb.is_running()) {
-    // Display the gdb prompt to the user
-    write_output(gdb, gdb_output, gdb_error, 1, MAX_COMMAND_TRIES);
-
     // Clear input string buffer
     gdb_input.clear();
 
@@ -61,7 +57,7 @@ int main(int argc, char ** argv) {
     // Execute the command that we read in
     gdb.execute(gdb_input);
 
-    // Display result of command 
-    write_output(gdb, gdb_output, gdb_error, MAX_COMMAND_WRITES, MAX_COMMAND_TRIES);
+    // Display result of command and prompt for next command
+    display(gdb, gdb_output, gdb_error);
   }
 }

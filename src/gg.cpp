@@ -10,8 +10,8 @@ void display(GDB & gdb, std::string & gdb_output, std::string & gdb_error) {
   // Read from GDB to populate buffers
   gdb.read_until_prompt(gdb_output, gdb_error);
 
-  // Pass output to IO streams
   if (!gdb_error.empty() || !gdb_output.empty()) {
+    // Pass output to IO streams
     std::cerr << gdb_error << std::flush;
     std::cout << gdb_output << std::flush;
   }
@@ -50,10 +50,17 @@ int main(int argc, char ** argv) {
       break;
     }
 
-    // Execute the command that we read in
-    gdb.execute(gdb_input);
+    // Handle empty input separately from regular command
+    if (gdb_input.size()) {
+      // Execute the command that we read in 
+      gdb.execute(gdb_input);
 
-    // Display result of command and prompt for next command
-    display(gdb, gdb_output, gdb_error);
+      // Display the result of the command and the next prompt
+      display(gdb, gdb_output, gdb_error);
+    }
+    else {
+      // Display the prompt for the next command 
+      std::cout << GDB_PROMPT;
+    }
   }
 }

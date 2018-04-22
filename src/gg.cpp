@@ -1,44 +1,18 @@
 #include <iostream>
-#include "pstream.hpp"
+#include "gg.hpp"
 
-bool flush(redi::pstream & process, 
-    char * buf, std::streamsize bufsz, 
-    bool * cerr_eof, bool * cout_eof)
-{
-  bool written = false;
+void display_next(GDB & gdb, std::string & gdb_output, std::string & gdb_error) {
+  // Clear output and error strings
+  gdb_output.clear();
+  gdb_error.clear();
 
-  // Write from process to stdout (non-blocking)
-  if (!*cerr_eof) {
-    while (bufsz = process.err().readsome(buf, sizeof(buf))) {
-      std::cerr.write(buf, bufsz);
-      written = true;
-    }
-    if (process.eof()) {
-      *cerr_eof = true;
-      if (!*cout_eof) {
-        process.clear(); 
-      }
-    }
-  }
+  // Flush GDB, now strings are populated
+  gdb.flush(gdb_output, gdb_error);
 
-
-  // Write from process to stdout (non-blocking)
-  if (!*cout_eof) {
-    while (bufsz = process.out().readsome(buf, sizeof(buf))) {
-      std::cout.write(buf, bufsz);
-      written = true;
-    }
-    if (process.eof()) {
-      *cout_eof = true;
-      if (!*cerr_eof) {
-        process.clear(); 
-      }
-    }
-  }
-
-  return written;
+  // Pass output to IO streams
+  std::cerr << gdb_error << std::flush;
+  std::cout << gdb_output << std::flush;
 }
-
 
 int main(int argc, char ** argv) {
   // Convert char ** to std::vector<std::string>
@@ -49,31 +23,34 @@ int main(int argc, char ** argv) {
     argv_vector.push_back(arg_string);
   }
 
-  // Open process process to gdb
-  const redi::pstreams::pmode mode = 
-    redi::pstreams::pstdin | 
-    redi::pstreams::pstdout |
-    redi::pstreams::pstderr;  
-  redi::pstream process("gdb", argv_vector, mode);
+  // Create GDB process
+  GDB gdb(argv_vector);
 
-  // Buffers, other variables 
-  char buf[BUFSIZ];
-  std::streamsize bufsz;
-  std::string linebuf;
-  bool cerr_eof = false;
-  bool cout_eof = false;
+  // Create string buffers 
+  std::string gdb_input;
+  std::string gdb_output;
+  std::string gdb_error;
 
-  while(!flush(process, buf, bufsz, &cerr_eof, &cout_eof));
+  // Perform initial flush to display gdb introduction to user 
+  display_next(gdb, gdb_output, gdb_error);
 
-  while (!cerr_eof || !cout_eof) {
+  while (true) {
+    // Display the gdb prompt to the user
+    display_next(gdb, gdb_output, gdb_error);
+
+    // Clear string buffers 
+    gdb_input.clear();
+    gdb_output.clear(); 
+    gdb_error.clear(); 
+
     // Read one line from stdin to process (blocking)
-    if (!process.eof()) {
-      std::cin >> linebuf;
-      process << linebuf << std::endl;
-    }
+    std::getline(std::cin, gdb_input);
 
-    while(!flush(process, buf, bufsz, &cerr_eof, &cout_eof));
+    // Execute the command that we read in
+    gdb.execute(gdb_input, gdb_output, gdb_error);
+
+    // Write output and error to their respective IO streams
+    std::cerr << gdb_error << std::flush;
+    std::cout << gdb_output << std::flush;
   }
 }
-
-

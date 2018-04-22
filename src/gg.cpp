@@ -1,30 +1,19 @@
 #include <iostream>
 #include "gg.hpp"
 
-#define MAX_READ_TRIES 1000
-
-const std::string gdb_prompt = "(gdb) ";
-
 void display(GDB & gdb, std::string & gdb_output, std::string & gdb_error) {
-  do {
-    // Break out of loop if process isn't running
-    if (!gdb.is_running()) {
-      break;
-    }
+  // Clear string buffers 
+  gdb_output.clear();
+  gdb_error.clear();
 
-    // Clear string buffers 
-    gdb_output.clear();
-    gdb_error.clear();
+  // Read from GDB to populate buffers
+  gdb.read_until_prompt(gdb_output, gdb_error);
 
-    // Read from GDB to populate buffers
-    gdb.read_into(gdb_output, gdb_error, MAX_READ_TRIES);
-
-    // Pass output to IO streams
-    if (!gdb_error.empty() || !gdb_output.empty()) {
-      std::cerr << gdb_error << std::flush;
-      std::cout << gdb_output << std::flush;
-    }
-  } while (gdb_output.find(gdb_prompt) == std::string::npos);
+  // Pass output to IO streams
+  if (!gdb_error.empty() || !gdb_output.empty()) {
+    std::cerr << gdb_error << std::flush;
+    std::cout << gdb_output << std::flush;
+  }
 }
 
 int main(int argc, char ** argv) {
@@ -53,6 +42,12 @@ int main(int argc, char ** argv) {
 
     // Read one line from stdin to process (blocking)
     std::getline(std::cin, gdb_input);
+
+    // Exit if EOF detected in input stream
+    if (std::cin.eof()) {
+      std::cout << GDB_QUIT << std::endl;
+      break;
+    }
 
     // Execute the command that we read in
     gdb.execute(gdb_input);

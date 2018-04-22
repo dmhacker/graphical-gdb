@@ -1,7 +1,15 @@
 #include "pstream.hpp"
+#define GDB_PROMPT "(gdb) "
+#define GDB_QUIT "quit"
 
-const redi::pstreams::pmode mode = 
+const redi::pstreams::pmode GDB_PMODE = 
   redi::pstreams::pstdin | redi::pstreams::pstdout | redi::pstreams::pstderr;
+
+bool ends_with(std::string const & value, std::string const & ending) {
+  if (ending.size() > value.size()) 
+    return false;
+  return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
 
 class GDB {
     redi::pstream process;
@@ -10,32 +18,28 @@ class GDB {
   public:
     // Class constructor opens the process.
     GDB(std::vector<std::string> argv_vector) :
-      process("gdb", argv_vector, mode) {}
+      process("gdb", argv_vector, GDB_PMODE) {}
 
     // Class desctructor closes the process.
     ~GDB(void) {
       process.close();
     }
 
-    // Execute the given command.
+    // Execute the given command by passing it to the process.
     void execute(std::string & command) {
       if (is_running()) {
-        // Run the command by passing it to the process
         process << command << std::endl;
       }
     }
 
     // Read whatever output and error is stored in the process.
-    // Method will try executing non-blocking reads a maximum of {tries} unless ...
+    // Method will try executing non-blocking reads until ... 
     //  a) the program quits
-    //  b) one of the output/error buffers becomes non-empty 
-    void read_into(std::string & output, std::string & error, long tries) {
-      // Keep executing non-blocking read until either program fails or buffers are not empty
-      long counter = 0;
-      while (counter < tries && is_running() && output.empty() && error.empty()) {
+    //  b) it detects the prompt at the end of either one of the stream buffers 
+    void read_until_prompt(std::string & output, std::string & error) {
+      do {
         try_read(output, error);
-        counter++;
-      }
+      } while (is_running() && !ends_with(output, GDB_PROMPT) && !ends_with(error, GDB_PROMPT));
     }
 
     // Returns true if the process is still running (e.g. it is expecting output).

@@ -1,7 +1,5 @@
 #include "pstream.hpp"
 
-#define MAX_READ_TRIES 100000
-
 const redi::pstreams::pmode mode = 
   redi::pstreams::pstdin | redi::pstreams::pstdout | redi::pstreams::pstderr;
 
@@ -28,13 +26,13 @@ class GDB {
     }
 
     // Read whatever output and error is stored in the process.
-    // Method will try executing non-blocking reads a maximum of {MAX_READ_TRIES} unless ...
+    // Method will try executing non-blocking reads a maximum of {tries} unless ...
     //  a) the program quits
     //  b) one of the output/error buffers becomes non-empty 
-    void read_into(std::string & output, std::string & error) {
+    void read_into(std::string & output, std::string & error, long tries) {
       // Keep executing non-blocking read until either program fails or buffers are not empty
       long counter = 0;
-      while (counter < MAX_READ_TRIES && is_running() && output.empty() && error.empty()) {
+      while (counter < tries && is_running() && output.empty() && error.empty()) {
         try_read(output, error);
         counter++;
       }

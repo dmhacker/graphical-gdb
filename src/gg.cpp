@@ -1,13 +1,13 @@
 #include <iostream>
 #include "gg.hpp"
 
-void display_next(GDB & gdb, std::string & gdb_output, std::string & gdb_error) {
+void write_output(GDB & gdb, std::string & gdb_output, std::string & gdb_error) {
   // Clear string buffers 
   gdb_output.clear();
   gdb_error.clear();
 
   // Read from GDB to populate buffers
-  gdb.read(gdb_output, gdb_error);
+  gdb.read_into(gdb_output, gdb_error);
 
   // Pass output to IO streams
   std::cerr << gdb_error << std::flush;
@@ -32,11 +32,16 @@ int main(int argc, char ** argv) {
   std::string gdb_error;
 
   // Perform initial flush to display gdb introduction to user 
-  display_next(gdb, gdb_output, gdb_error);
+  write_output(gdb, gdb_output, gdb_error);
+
+  // Write out additional message if we are passing in a file
+  if (argv_vector.size()) {
+    write_output(gdb, gdb_output, gdb_error);
+  }
 
   while (gdb.is_running()) {
     // Display the gdb prompt to the user
-    display_next(gdb, gdb_output, gdb_error);
+    write_output(gdb, gdb_output, gdb_error);
 
     // Clear input string buffer
     gdb_input.clear();
@@ -47,9 +52,7 @@ int main(int argc, char ** argv) {
     // Execute the command that we read in
     gdb.execute(gdb_input);
 
-    // Display result of command if we know that the command produces a result
-    if (!gdb_input.empty()) {
-      display_next(gdb, gdb_output, gdb_error);
-    }
+    // Display result of command 
+    write_output(gdb, gdb_output, gdb_error);
   }
 }

@@ -1,3 +1,5 @@
+#include <wx/wx.h>
+
 #include "pstream.hpp"
 
 #define GDB_PROMPT "(gdb) "
@@ -76,3 +78,78 @@ class GDB {
       }
     }
 };
+
+class GDBApp : public wxApp {
+  public:
+    virtual bool OnInit();
+};
+
+class GDBFrame : public wxFrame {
+  public:
+    GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & size);
+  private:
+    void OnHello(wxCommandEvent & event);
+    void OnAbout(wxCommandEvent & event);
+    void OnExit(wxCommandEvent & event);
+    wxDECLARE_EVENT_TABLE();
+};
+
+enum {
+  ID_Hello = 1
+};
+
+bool GDBApp::OnInit() {
+  long screen_x = wxSystemSettings::GetMetric(wxSYS_SCREEN_X);
+  long screen_y = wxSystemSettings::GetMetric(wxSYS_SCREEN_Y);
+  long frame_x = screen_x / 2;
+  long frame_y = screen_y / 2;
+  GDBFrame * frame = new GDBFrame("GDB Display", 
+      wxPoint((screen_x - frame_x) / 2, (screen_y - frame_y) / 2), 
+      wxSize(frame_x, frame_y));
+  frame->Show(true);
+  return true;
+}
+
+GDBFrame::GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & size) :
+  wxFrame(NULL, wxID_ANY, title, pos, size) 
+{
+  wxMenu * menuFile = new wxMenu;
+  menuFile->Append(ID_Hello, "&Hello...\tCtrl-H",
+                             "Help string shown in status bar for this menu item");
+  menuFile->AppendSeparator();
+  menuFile->Append(wxID_EXIT);
+
+  wxMenu * menuHelp = new wxMenu;
+  menuHelp->Append(wxID_ABOUT);
+
+  wxMenuBar * menuBar = new wxMenuBar;
+  menuBar->Append(menuFile, "&File");
+  menuBar->Append(menuHelp, "&Help");
+  SetMenuBar(menuBar);
+
+  CreateStatusBar();
+  SetStatusText("Welcome to wxWidgets!");
+}
+
+void GDBFrame::OnHello(wxCommandEvent & event) {
+  wxLogMessage("Hello world from wxWidgets!");
+}
+
+void GDBFrame::OnAbout(wxCommandEvent & event) {
+  wxMessageBox("This is a wxWidget's Hello world sample",
+                "About Hello World", wxOK | wxICON_INFORMATION);
+}
+
+void GDBFrame::OnExit(wxCommandEvent & event) {
+  Close(true);
+}
+
+wxBEGIN_EVENT_TABLE(GDBFrame, wxFrame)
+  EVT_MENU(ID_Hello, GDBFrame::OnHello)
+  EVT_MENU(wxID_EXIT, GDBFrame::OnExit)
+  EVT_MENU(wxID_ABOUT, GDBFrame::OnAbout)
+wxEND_EVENT_TABLE()
+
+wxIMPLEMENT_APP_NO_MAIN(GDBApp);
+
+

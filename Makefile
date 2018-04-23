@@ -1,6 +1,6 @@
 CC=g++
 FLAGS=-std=c++11
-LIBS=-lreadline
+LIBS=-lreadline `wx-config --cxxflags --libs` 
 
 .PHONY: clean
 

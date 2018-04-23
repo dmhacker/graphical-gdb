@@ -5,7 +5,7 @@
 
 #include "gg.hpp"
 
-void display(GDB & gdb, std::string & gdb_output, std::string & gdb_error) {
+void display_write(GDB & gdb, std::string & gdb_output, std::string & gdb_error) {
   // Clear string buffers 
   gdb_output.clear();
   gdb_error.clear();
@@ -37,7 +37,10 @@ int main(int argc, char ** argv) {
   std::string gdb_error;
 
   // Display gdb introduction to user 
-  display(gdb, gdb_output, gdb_error);
+  display_write(gdb, gdb_output, gdb_error);
+
+  // TODO: currently blocking, offload to separate thread
+  wxEntry(argc, argv);
 
   while (gdb.is_running()) {
     // Read one line from stdin to process (blocking)
@@ -59,7 +62,7 @@ int main(int argc, char ** argv) {
       gdb.execute(gdb_input);
 
       // Display the result of the command and the next prompt
-      display(gdb, gdb_output, gdb_error);
+      display_write(gdb, gdb_output, gdb_error);
     }
     else {
       // Display the prompt for the next command 

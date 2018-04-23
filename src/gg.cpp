@@ -1,11 +1,12 @@
 #include <iostream>
+#include <thread>
 
 #include <readline/readline.h>
 #include <readline/history.h>
 
 #include "gg.hpp"
 
-void display_write(GDB & gdb, std::string & gdb_output, std::string & gdb_error) {
+void write_console(GDB & gdb, std::string & gdb_output, std::string & gdb_error) {
   // Clear string buffers 
   gdb_output.clear();
   gdb_error.clear();
@@ -20,27 +21,16 @@ void display_write(GDB & gdb, std::string & gdb_output, std::string & gdb_error)
   }
 }
 
-int main(int argc, char ** argv) {
-  // Convert char ** to std::vector<std::string>
-  std::vector<std::string> argv_vector;
-  for (int i = 0; i < argc; i++) {
-    char * arg = argv[i];
-    std::string arg_string(arg);
-    argv_vector.push_back(arg_string);
-  }
-
+void open_console(std::vector<std::string> args) {
   // Create GDB process
-  GDB gdb(argv_vector);
+  GDB gdb(args);
 
   // Create string buffers 
   std::string gdb_output;
   std::string gdb_error;
 
   // Display gdb introduction to user 
-  display_write(gdb, gdb_output, gdb_error);
-
-  // TODO: currently blocking, offload to separate thread
-  wxEntry(argc, argv);
+  write_console(gdb, gdb_output, gdb_error);
 
   while (gdb.is_running()) {
     // Read one line from stdin to process (blocking)
@@ -62,7 +52,7 @@ int main(int argc, char ** argv) {
       gdb.execute(gdb_input);
 
       // Display the result of the command and the next prompt
-      display_write(gdb, gdb_output, gdb_error);
+      write_console(gdb, gdb_output, gdb_error);
     }
     else {
       // Display the prompt for the next command 
@@ -73,3 +63,22 @@ int main(int argc, char ** argv) {
     delete buf_input;
   }
 }
+
+int main(int argc, char ** argv) {
+  // Convert char ** to std::vector<std::string>
+  std::vector<std::string> args;
+  for (int i = 0; i < argc; i++) {
+    char * arg = argv[i];
+    std::string argstr(arg);
+    args.push_back(argstr);
+  }
+
+  // Open console to accept user input in a separate thread
+  std::thread console(open_console, args);
+
+  // Run GUI on main thread
+  wxEntry(argc, argv);
+
+  return 0;
+}
+

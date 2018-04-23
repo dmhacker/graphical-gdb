@@ -21,7 +21,15 @@ void write_console(GDB & gdb, std::string & gdb_output, std::string & gdb_error)
   }
 }
 
-void open_console(std::vector<std::string> args) {
+void open_console(int argc, char ** argv) {
+  // Convert char ** to std::vector<std::string>
+  std::vector<std::string> args;
+  for (int i = 0; i < argc; i++) {
+    char * arg = argv[i];
+    std::string argstr(arg);
+    args.push_back(argstr);
+  }
+
   // Create GDB process
   GDB gdb(args);
 
@@ -64,20 +72,17 @@ void open_console(std::vector<std::string> args) {
   }
 }
 
-int main(int argc, char ** argv) {
-  // Convert char ** to std::vector<std::string>
-  std::vector<std::string> args;
-  for (int i = 0; i < argc; i++) {
-    char * arg = argv[i];
-    std::string argstr(arg);
-    args.push_back(argstr);
-  }
-
-  // Open console to accept user input in a separate thread
-  std::thread console(open_console, args);
-
-  // Run GUI on main thread
+void open_gui(int argc, char ** argv) {
   wxEntry(argc, argv);
+}
+
+int main(int argc, char ** argv) {
+  // Run GUI on detached thread; main thread will post events to it
+  std::thread gui(open_gui, argc, argv);
+  gui.detach();
+
+  // Main thread opens console to accept user input 
+  open_console(argc, argv);
 
   return 0;
 }

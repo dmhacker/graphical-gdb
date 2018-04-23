@@ -20,7 +20,7 @@ Any arguments that you pass to gg on startup will be passed to gdb.
 sudo apt-get install gg
 ```
 
-Note that gg requires g++ for compilation purposes.
+Note that gg requires g++ and libreadline-dev for compilation purposes.
 
 ## Backstory
 

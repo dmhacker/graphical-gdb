@@ -1,5 +1,8 @@
 #include <iostream>
 
+#include <readline/readline.h>
+#include <readline/history.h>
+
 #include "gg.hpp"
 
 void display(GDB & gdb, std::string & gdb_output, std::string & gdb_error) {
@@ -8,7 +11,7 @@ void display(GDB & gdb, std::string & gdb_output, std::string & gdb_error) {
   gdb_error.clear();
 
   // Read from GDB to populate buffers
-  gdb.read_until_prompt(gdb_output, gdb_error);
+  gdb.read_until_prompt(gdb_output, gdb_error, true);
 
   if (!gdb_error.empty() || !gdb_output.empty()) {
     // Pass output to IO streams
@@ -30,7 +33,6 @@ int main(int argc, char ** argv) {
   GDB gdb(argv_vector);
 
   // Create string buffers 
-  std::string gdb_input;
   std::string gdb_output;
   std::string gdb_error;
 
@@ -38,21 +40,22 @@ int main(int argc, char ** argv) {
   display(gdb, gdb_output, gdb_error);
 
   while (gdb.is_running()) {
-    // Clear input string buffer
-    gdb_input.clear();
-
     // Read one line from stdin to process (blocking)
-    std::getline(std::cin, gdb_input);
+    char * buf_input = readline(GDB_PROMPT);
 
-    // Exit if EOF detected in input stream
-    if (std::cin.eof()) {
+    // A null pointer signals input EOF 
+    if (!buf_input) {
       std::cout << GDB_QUIT << std::endl;
       break;
     }
 
     // Handle empty input separately from regular command
-    if (gdb_input.size()) {
+    if (strlen(buf_input)) {
+      // Add input to our CLI history
+      add_history(buf_input);
+
       // Execute the command that we read in 
+      std::string gdb_input(buf_input);
       gdb.execute(gdb_input);
 
       // Display the result of the command and the next prompt
@@ -62,5 +65,8 @@ int main(int argc, char ** argv) {
       // Display the prompt for the next command 
       std::cout << GDB_PROMPT;
     }
+
+    // Delete the input buffer, free up memory
+    delete buf_input;
   }
 }

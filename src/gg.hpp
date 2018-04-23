@@ -27,20 +27,31 @@ class GDB {
     }
 
     // Execute the given command by passing it to the process.
-    void execute(std::string & command) {
-      if (is_running()) {
+    void execute(const char * command) {
+      if (command && is_running()) {
         process << command << std::endl;
       }
+    }
+
+    // Overloaded function to support std::strings in addition to C-style strings.
+    void execute(const std::string & command) {
+      execute(command.c_str());
     }
 
     // Read whatever output and error is stored in the process.
     // Method will try executing non-blocking reads until ... 
     //  a) the program quits
-    //  b) it detects the prompt at the end of either one of the stream buffers 
-    void read_until_prompt(std::string & output, std::string & error) {
+    //  b) it detects the prompt at the end of the stdout buffer
+    void read_until_prompt(std::string & output, std::string & error, bool trim_prompt) {
+      // Do non-blocking reads
       do {
         try_read(output, error);
-      } while (is_running() && !ends_with(output, GDB_PROMPT) && !ends_with(error, GDB_PROMPT));
+      } while (is_running() && !ends_with(output, GDB_PROMPT));
+
+      // Trim prompt from end if program is running and trim prompt is specified
+      if (is_running() && trim_prompt) {
+        output.erase(output.size() - strlen(GDB_PROMPT), output.size());
+      }
     }
 
     // Returns true if the process is still running (e.g. it is expecting output).
@@ -52,8 +63,7 @@ class GDB {
     }
   private:
     // Performs a non-blocking read. 
-    // Makes one pass over the process output/error streams
-    // to see if there is any data that needs to be read.
+    // Makes one pass over the process output/error streams to collect data. 
     void try_read(std::string & output, std::string & error) {
       // Read process's error stream and append to error string
       while (bufsz = process.err().readsome(buf, sizeof(buf))) {

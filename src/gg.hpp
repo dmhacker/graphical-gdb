@@ -1,5 +1,4 @@
 #include "pstream.hpp"
-#include "nuklear.h" 
 
 #define GDB_PROMPT "(gdb) "
 #define GDB_QUIT "quit"

@@ -5,85 +5,41 @@
 #define GDB_PROMPT "(gdb) "
 #define GDB_QUIT "quit"
 
+// GDB process mode uses its own stdin, stdout and stderr
 const redi::pstreams::pmode GDB_PMODE = 
   redi::pstreams::pstdin | redi::pstreams::pstdout | redi::pstreams::pstderr;
 
+// Helper function for determining if a string ends with a certain value
 bool ends_with(std::string const & value, std::string const & ending) {
   if (ending.size() > value.size()) 
     return false;
   return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
 
+// GDB class that represents a process abstraction
 class GDB {
     redi::pstream process;
     char buf[BUFSIZ];
     std::streamsize bufsz;
   public:
-    // Class constructor opens the process.
-    GDB(std::vector<std::string> argv_vector) :
-      process("gdb", argv_vector, GDB_PMODE) {}
-
-    // Class desctructor closes the process.
-    ~GDB(void) {
-      process.close();
-    }
-
-    // Execute the given command by passing it to the process.
-    void execute(const char * command) {
-      if (command && is_running()) {
-        process << command << std::endl;
-      }
-    }
-
-    // Overloaded function to support std::strings in addition to C-style strings.
-    void execute(const std::string & command) {
-      execute(command.c_str());
-    }
-
-    // Read whatever output and error is stored in the process.
-    // Method will try executing non-blocking reads until ... 
-    //  a) the program quits
-    //  b) it detects the prompt at the end of the stdout buffer
-    void read_until_prompt(std::string & output, std::string & error, bool trim_prompt) {
-      // Do non-blocking reads
-      do {
-        try_read(output, error);
-      } while (is_running() && !ends_with(output, GDB_PROMPT));
-
-      // Trim prompt from end if program is running and trim prompt is specified
-      if (is_running() && trim_prompt) {
-        output.erase(output.size() - strlen(GDB_PROMPT), output.size());
-      }
-    }
-
-    // Returns true if the process is still running (e.g. it is expecting output).
-    bool is_running() {
-      bool exited = 
-        process.out().rdbuf()->exited() || // Check process output buffer
-        process.err().rdbuf()->exited();   // Check process error buffer
-      return !exited;
-    }
+    GDB(std::vector<std::string> args);
+    ~GDB(void);
+    void execute(const char * command);
+    void execute(const std::string & command);
+    void read_until_prompt(std::string & output, std::string & error, bool trim_prompt);
+    bool is_alive();
+    bool is_running_program();
   private:
-    // Performs a non-blocking read. 
-    // Makes one pass over the process output/error streams to collect data. 
-    void try_read(std::string & output, std::string & error) {
-      // Read process's error stream and append to error string
-      while (bufsz = process.err().readsome(buf, sizeof(buf))) {
-        error.append(buf, bufsz);
-      }
-
-      // Read process's output stream and append to output string 
-      while (bufsz = process.out().readsome(buf, sizeof(buf))) {
-        output.append(buf, bufsz);
-      }
-    }
+    void try_read(std::string & output, std::string & error);
 };
 
+// wxWidgets application class (serves as an interface with GDB)
 class GDBApp : public wxApp {
   public:
     virtual bool OnInit();
 };
 
+// wxWidgets top level frame that goes with the GDB application
 class GDBFrame : public wxFrame {
   public:
     GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & size);
@@ -94,9 +50,74 @@ class GDBFrame : public wxFrame {
     wxDECLARE_EVENT_TABLE();
 };
 
+// wxWidgets enum(s) used for event handling
 enum {
   ID_Hello = 1
 };
+
+// Class constructor opens the process.
+GDB::GDB(std::vector<std::string> args) : 
+  process("gdb", args, GDB_PMODE) {}
+
+// Class desctructor closes the process.
+GDB::~GDB() {
+  process.close();
+}
+
+// Execute the given command by passing it to the process.
+void GDB::execute(const char * command) {
+  if (command && is_alive()) {
+    process << command << std::endl;
+  }
+}
+
+// Overloaded function to support std::strings in addition to C-style strings.
+void GDB::execute(const std::string & command) {
+  execute(command.c_str());
+}
+
+// Read whatever output and error is stored in the process.
+// Method will try executing non-blocking reads until ... 
+//  a) the program quits
+//  b) it detects the prompt at the end of the stdout buffer
+void GDB::read_until_prompt(std::string & output, std::string & error, bool trim_prompt) {
+  // Do non-blocking reads
+  do {
+    try_read(output, error);
+  } while (is_alive() && !ends_with(output, GDB_PROMPT));
+
+  // Trim prompt from end if program is running and trim prompt is specified
+  if (is_alive() && trim_prompt) {
+    output.erase(output.size() - strlen(GDB_PROMPT), output.size());
+  }
+}
+
+// Returns true if the GDB process is still alive 
+bool GDB::is_alive() {
+  bool exited = 
+    process.out().rdbuf()->exited() || // Check process output buffer
+    process.err().rdbuf()->exited();   // Check process error buffer
+  return !exited;
+}
+
+// Returns true if the GDB process is running/debugging a program
+bool GDB::is_running_program() {
+  return false;
+}
+
+// Performs a non-blocking read. 
+// Makes one pass over the process output/error streams to collect data. 
+void GDB::try_read(std::string & output, std::string & error) {
+  // Read process's error stream and append to error string
+  while (bufsz = process.err().readsome(buf, sizeof(buf))) {
+    error.append(buf, bufsz);
+  }
+
+  // Read process's output stream and append to output string 
+  while (bufsz = process.out().readsome(buf, sizeof(buf))) {
+    output.append(buf, bufsz);
+  }
+}
 
 bool GDBApp::OnInit() {
   long screen_x = wxSystemSettings::GetMetric(wxSYS_SCREEN_X);

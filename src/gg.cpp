@@ -29,7 +29,7 @@ void open_console(GDB & gdb) {
   // Display gdb introduction to user 
   write_console(gdb, gdb_output, gdb_error);
 
-  while (gdb.is_running()) {
+  while (gdb.is_alive()) {
     // Read one line from stdin to process (blocking)
     char * buf_input = readline(GDB_PROMPT);
 

@@ -14,17 +14,19 @@ Running gg opens up a GUI that displays your program's stack, registers, variabl
 
 Any arguments that you pass to gg on startup will be passed to gdb.
 
-## Installation
+## Building 
 
 ```
 sudo apt-get install gg
 ```
 
-Note that gg requires this packages to build from source:
+Note that gg requires these packages to build from source:
   * build-essential
   * libreadline-dev
   * libwxgtk3.0-dev
 
+The compiled executable should only be about 171 KB in total.
+
 ## Backstory
 
-gg was intended for users who are running gdb on a remote machine. Specifically, it was designed for UCSD's [CSE 30](https://cse.ucsd.edu/undergraduate/courses/course-descriptions/cse-30-computer-organization-and-systems-programming) class, where all programming assignments are done over SSH. As long as X11 forwarding is enabled for the connection, the GUI will display correctly on the host machine.
+gg was intended for users who are running gdb on a remote machine. Specifically, I designed it for UCSD's [CSE 30](https://cse.ucsd.edu/undergraduate/courses/course-descriptions/cse-30-computer-organization-and-systems-programming) class, where all programming assignments are done over SSH. As long as X11 forwarding is enabled for the connection, the GUI will display correctly on the host machine.

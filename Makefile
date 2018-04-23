@@ -1,8 +1,10 @@
-all: clean build run
-build:
-	cd src && g++ gg.cpp -o gg -lreadline
-	mkdir -p build && mv src/gg build/
-run: build
-		./build/gg
+CC=g++
+FLAGS=-std=c++11
+LIBS=-lreadline
+
+.PHONY: clean
+
+build/gg: src/gg.cpp src/gg.hpp
+	$(CC) $(FLAGS) src/gg.cpp -o build/gg $(LIBS)
 clean:
 	rm -rf build/

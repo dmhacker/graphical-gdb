@@ -5,6 +5,9 @@
 #define GDB_PROMPT "(gdb) "
 #define GDB_QUIT "quit"
 
+#define GDB_STATUS_IDLE "GDB is idle."
+#define GDB_STATUS_RUNNING "GDB is currently running a program."
+
 // GDB process mode uses its own stdin, stdout and stderr
 const redi::pstreams::pmode GDB_PMODE = 
   redi::pstreams::pstdin | redi::pstreams::pstdout | redi::pstreams::pstderr;
@@ -48,15 +51,9 @@ class GDBFrame : public wxFrame {
   public:
     GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & size);
   private:
-    void OnHello(wxCommandEvent & event);
     void OnAbout(wxCommandEvent & event);
     void OnExit(wxCommandEvent & event);
     wxDECLARE_EVENT_TABLE();
-};
-
-// wxWidgets enum(s) used for event handling
-enum {
-  ID_Hello = 1
 };
 
 // Class constructor opens the process.
@@ -146,9 +143,6 @@ GDBFrame::GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & s
   wxFrame(NULL, wxID_ANY, title, pos, size) 
 {
   wxMenu * menuFile = new wxMenu;
-  menuFile->Append(ID_Hello, "&Hello...\tCtrl-H",
-                             "Help string shown in status bar for this menu item");
-  menuFile->AppendSeparator();
   menuFile->Append(wxID_EXIT);
 
   wxMenu * menuHelp = new wxMenu;
@@ -160,16 +154,12 @@ GDBFrame::GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & s
   SetMenuBar(menuBar);
 
   CreateStatusBar();
-  SetStatusText("GDB is idle and is not debugging any program.");
-}
-
-void GDBFrame::OnHello(wxCommandEvent & event) {
-  wxLogMessage("Hello world from wxWidgets!");
+  SetStatusText(GDB_STATUS_IDLE);
 }
 
 void GDBFrame::OnAbout(wxCommandEvent & event) {
   wxMessageBox("This is a wxWidget's Hello world sample",
-                "About Hello World", wxOK | wxICON_INFORMATION);
+               "About Hello World", wxOK | wxICON_INFORMATION);
 }
 
 void GDBFrame::OnExit(wxCommandEvent & event) {
@@ -177,11 +167,8 @@ void GDBFrame::OnExit(wxCommandEvent & event) {
 }
 
 wxBEGIN_EVENT_TABLE(GDBFrame, wxFrame)
-  EVT_MENU(ID_Hello, GDBFrame::OnHello)
   EVT_MENU(wxID_EXIT, GDBFrame::OnExit)
   EVT_MENU(wxID_ABOUT, GDBFrame::OnAbout)
 wxEND_EVENT_TABLE()
 
 wxIMPLEMENT_APP_NO_MAIN(GDBApp);
-
-

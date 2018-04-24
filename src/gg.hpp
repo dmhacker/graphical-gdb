@@ -64,11 +64,6 @@ class GDBFrame : public wxFrame {
     wxDECLARE_EVENT_TABLE();
 };
 
-// wxWidgets additional event IDs
-enum {
-  ID_STATUS_BAR_UPDATE = 1
-};
-
 // Class constructor opens the process.
 GDB::GDB(std::vector<std::string> args) : 
   process("gdb", args, GDB_PMODE) {}
@@ -157,14 +152,21 @@ void GDB::try_read(std::vector<GDBOutput> & buffer) {
 }
 
 bool GDBApp::OnInit() {
+  // Determine screen and application dimensions
   long screen_x = wxSystemSettings::GetMetric(wxSYS_SCREEN_X);
   long screen_y = wxSystemSettings::GetMetric(wxSYS_SCREEN_Y);
   long frame_x = screen_x / 2;
   long frame_y = screen_y / 2;
+
+  // Create main frame and display 
   GDBFrame * frame = new GDBFrame("GDB Display", 
       wxPoint((screen_x - frame_x) / 2, (screen_y - frame_y) / 2), 
       wxSize(frame_x, frame_y));
   frame->Show(true);
+
+  // Set top window to be the frame
+  SetTopWindow(frame);
+
   return true;
 }
 
@@ -202,7 +204,7 @@ void GDBFrame::DoStatusBarUpdate(wxCommandEvent & event) {
 wxBEGIN_EVENT_TABLE(GDBFrame, wxFrame)
   EVT_MENU(wxID_EXIT, GDBFrame::OnExit)
   EVT_MENU(wxID_ABOUT, GDBFrame::OnAbout)
-  EVT_MENU(ID_STATUS_BAR_UPDATE, GDBFrame::DoStatusBarUpdate)
+  EVT_COMMAND(wxID_ANY, wxEVT_COMMAND_BUTTON_CLICKED, GDBFrame::DoStatusBarUpdate)
 wxEND_EVENT_TABLE()
 
 wxIMPLEMENT_APP_NO_MAIN(GDBApp);

@@ -6,33 +6,37 @@
 
 #include "gg.hpp"
 
-void update_console_and_gui(GDB & gdb, std::string & gdb_output, std::string & gdb_error) {
-  // Clear string buffers 
+void update_console_and_gui(GDB & gdb, std::vector<GDBOutput> & gdb_output) {
+  // Clear output buffer
   gdb_output.clear();
-  gdb_error.clear();
 
-  // Read from GDB to populate buffers
-  gdb.read_until_prompt(gdb_output, gdb_error, true);
+  // Read from GDB to populate buffer
+  gdb.read_until_prompt(gdb_output, true);
 
   // Update GUI status bar
   wxCommandEvent * event = new wxCommandEvent(wxEVT_NULL, ID_STATUS_BAR_UPDATE);
   event->SetString(gdb.is_running_program() ? GDB_STATUS_RUNNING : GDB_STATUS_IDLE);
   wxTheApp->QueueEvent(event);
 
-  if (!gdb_error.empty() || !gdb_output.empty()) {
-    // Pass output to IO streams
-    std::cerr << gdb_error << std::flush;
-    std::cout << gdb_output << std::flush;
+  if (!gdb_output.empty()) {
+    for (GDBOutput output : gdb_output) {
+      // Pass output to IO streams
+      if (output.is_error) {
+        std::cerr << output.content << std::flush;
+      }
+      else {
+        std::cout << output.content << std::flush;
+      }
+    }
   }
 }
 
 void open_console(GDB & gdb) {
-    // Create string buffers 
-  std::string gdb_output;
-  std::string gdb_error;
+  // Create output buffer
+  std::vector<GDBOutput> gdb_output;
 
   // Display gdb introduction to user 
-  update_console_and_gui(gdb, gdb_output, gdb_error);
+  update_console_and_gui(gdb, gdb_output);
 
   while (gdb.is_alive()) {
     // Read one line from stdin to process (blocking)
@@ -53,7 +57,7 @@ void open_console(GDB & gdb) {
       gdb.execute(buf_input);
 
       // Display the result of the command and the next prompt
-      update_console_and_gui(gdb, gdb_output, gdb_error);
+      update_console_and_gui(gdb, gdb_output);
     }
 
     // Delete the input buffer, free up memory

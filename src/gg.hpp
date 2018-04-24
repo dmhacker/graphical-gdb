@@ -24,6 +24,12 @@ bool string_contains(std::string const & str, std::string const & value) {
   return str.find(value) != std::string::npos;
 }
 
+// Struct to hold GDB output and indicate whether or not it is error output
+typedef struct GDBOutput {
+  std::string content;
+  bool is_error;
+} GDBOutput;
+
 // GDB class that represents a process abstraction
 class GDB {
     redi::pstream process;
@@ -33,11 +39,11 @@ class GDB {
     GDB(std::vector<std::string> args);
     ~GDB(void);
     void execute(const char * command);
-    void read_until_prompt(std::string & output, std::string & error, bool trim_prompt);
+    void read_until_prompt(std::vector<GDBOutput> & buffer, bool trim_prompt);
     bool is_alive();
     bool is_running_program();
   private:
-    void try_read(std::string & output, std::string & error);
+    void try_read(std::vector<GDBOutput> & buffer);
 };
 
 // wxWidgets application class (serves as an interface with GDB)
@@ -83,15 +89,25 @@ void GDB::execute(const char * line) {
 // Method will try executing non-blocking reads until ... 
 //  a) the program quits
 //  b) it detects the prompt at the end of the stdout buffer
-void GDB::read_until_prompt(std::string & output, std::string & error, bool trim_prompt) {
+void GDB::read_until_prompt(std::vector<GDBOutput> & buffer, bool trim_prompt) {
   // Do non-blocking reads
   do {
-    try_read(output, error);
-  } while (is_alive() && !string_ends_with(output, GDB_PROMPT));
+    try_read(buffer);
+  } while (is_alive() && (buffer.empty() || !string_ends_with(buffer.back().content, GDB_PROMPT)));
 
   // Trim prompt from end if program is running and trim prompt is specified
   if (is_alive() && trim_prompt) {
-    output.erase(output.size() - strlen(GDB_PROMPT), output.size());
+    // Get the GDB output that contains the prompt and remove it from the buffer
+    GDBOutput old_output = buffer.back();
+    std::string prompt = old_output.content; 
+    buffer.pop_back();
+
+    // Erase part of the GDB output 
+    prompt.erase(prompt.size() - strlen(GDB_PROMPT), prompt.size());
+
+    // Add trimmed output back to the buffer
+    GDBOutput trimmed_output { prompt, old_output.is_error };
+    buffer.push_back(trimmed_output);
   }
 }
 
@@ -105,31 +121,40 @@ bool GDB::is_alive() {
 
 // Returns true if the GDB process is running/debugging a program
 bool GDB::is_running_program() {
-  // Create string buffers
-  std::string info_output;
-  std::string info_error;
+  // Create output buffer 
+  std::vector<GDBOutput> gdb_output;
 
   // Call info program in GDB
   execute("info program");
 
   // Get result of command
-  read_until_prompt(info_output, info_error, true);
+  read_until_prompt(gdb_output, true);
 
   // Output with "not being run" only appears when GDB is not running anything
-  return !string_contains(info_output, "not being run");
+  for (GDBOutput output : gdb_output) {
+    if (string_contains(output.content, "not being run")) {
+      return false;
+    }
+  }
+  
+  return true; 
 }
 
 // Performs a non-blocking read. 
 // Makes one pass over the process output/error streams to collect data. 
-void GDB::try_read(std::string & output, std::string & error) {
+void GDB::try_read(std::vector<GDBOutput> & buffer) {
   // Read process's error stream and append to error string
   while (bufsz = process.err().readsome(buf, sizeof(buf))) {
-    error.append(buf, bufsz);
+    std::string error_string(buf, bufsz);
+    GDBOutput error { error_string, true }; 
+    buffer.push_back(error);
   }
 
   // Read process's output stream and append to output string 
   while (bufsz = process.out().readsome(buf, sizeof(buf))) {
-    output.append(buf, bufsz);
+    std::string output_string(buf, bufsz);
+    GDBOutput output { output_string, false };
+    buffer.push_back(output); 
   }
 }
 

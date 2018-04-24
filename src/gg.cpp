@@ -45,15 +45,10 @@ void open_console(GDB & gdb) {
       add_history(buf_input);
 
       // Execute the command that we read in 
-      std::string gdb_input(buf_input);
-      gdb.execute(gdb_input);
+      gdb.execute(buf_input);
 
       // Display the result of the command and the next prompt
       write_console(gdb, gdb_output, gdb_error);
-    }
-    else {
-      // Display the prompt for the next command 
-      std::cout << GDB_PROMPT;
     }
 
     // Delete the input buffer, free up memory

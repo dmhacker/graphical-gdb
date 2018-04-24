@@ -10,10 +10,15 @@ const redi::pstreams::pmode GDB_PMODE =
   redi::pstreams::pstdin | redi::pstreams::pstdout | redi::pstreams::pstderr;
 
 // Helper function for determining if a string ends with a certain value
-bool ends_with(std::string const & value, std::string const & ending) {
-  if (ending.size() > value.size()) 
+bool string_ends_with(std::string const & str, std::string const & ending) {
+  if (ending.size() > str.size()) 
     return false;
-  return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+  return std::equal(ending.rbegin(), ending.rend(), str.rbegin());
+}
+
+// Helper function for determining if a string contains a value
+bool string_contains(std::string const & str, std::string const & value) {
+  return str.find(value) != std::string::npos;
 }
 
 // GDB class that represents a process abstraction
@@ -25,7 +30,6 @@ class GDB {
     GDB(std::vector<std::string> args);
     ~GDB(void);
     void execute(const char * command);
-    void execute(const std::string & command);
     void read_until_prompt(std::string & output, std::string & error, bool trim_prompt);
     bool is_alive();
     bool is_running_program();
@@ -65,15 +69,11 @@ GDB::~GDB() {
 }
 
 // Execute the given command by passing it to the process.
-void GDB::execute(const char * command) {
-  if (command && is_alive()) {
-    process << command << std::endl;
+void GDB::execute(const char * line) {
+  if (is_alive() && line) {
+    // Pass line directly to process
+    process << line << std::endl;
   }
-}
-
-// Overloaded function to support std::strings in addition to C-style strings.
-void GDB::execute(const std::string & command) {
-  execute(command.c_str());
 }
 
 // Read whatever output and error is stored in the process.
@@ -84,7 +84,7 @@ void GDB::read_until_prompt(std::string & output, std::string & error, bool trim
   // Do non-blocking reads
   do {
     try_read(output, error);
-  } while (is_alive() && !ends_with(output, GDB_PROMPT));
+  } while (is_alive() && !string_ends_with(output, GDB_PROMPT));
 
   // Trim prompt from end if program is running and trim prompt is specified
   if (is_alive() && trim_prompt) {
@@ -102,7 +102,18 @@ bool GDB::is_alive() {
 
 // Returns true if the GDB process is running/debugging a program
 bool GDB::is_running_program() {
-  return false;
+  // Create string buffers
+  std::string info_output;
+  std::string info_error;
+
+  // Call info program in GDB
+  execute("info program");
+
+  // Get result of command
+  read_until_prompt(info_output, info_error, true);
+
+  // Output with "not being run" only appears when GDB is not running anything
+  return !string_contains(info_output, "not being run");
 }
 
 // Performs a non-blocking read. 
@@ -149,7 +160,7 @@ GDBFrame::GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & s
   SetMenuBar(menuBar);
 
   CreateStatusBar();
-  SetStatusText("Welcome to wxWidgets!");
+  SetStatusText("GDB is idle and is not debugging any program.");
 }
 
 void GDBFrame::OnHello(wxCommandEvent & event) {

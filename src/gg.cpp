@@ -33,7 +33,18 @@ void update_console_and_gui(GDB & gdb, std::vector<GDBOutput> & gdb_output) {
   }
 }
 
-void open_console(GDB & gdb) {
+void open_console(int argc, char ** argv) {
+  // Convert raw C string to STL string 
+  std::vector<std::string> args;
+  for (int i = 0; i < argc; i++) {
+    char * arg = argv[i];
+    std::string argstr(arg);
+    args.push_back(argstr);
+  }
+
+  // Create instance of GDB
+  GDB gdb(args);
+
   // Create output buffer
   std::vector<GDBOutput> gdb_output;
 
@@ -67,33 +78,17 @@ void open_console(GDB & gdb) {
   }
 }
 
-void open_gui() {
-  // Pass in empty arguments
-  int wx_argc = 0;
-  char ** wx_argv = nullptr;
-
-  // Open GUI using wxEntry
-  wxEntry(wx_argc, wx_argv);
+void open_gui(int argc, char ** argv) {
+  wxEntry(argc, argv);
 }
 
 int main(int argc, char ** argv) {
-  // Convert char ** to std::vector<std::string>
-  std::vector<std::string> args;
-  for (int i = 0; i < argc; i++) {
-    char * arg = argv[i];
-    std::string argstr(arg);
-    args.push_back(argstr);
-  }
-
-  // Create GDB process
-  GDB gdb(args);
-
   // Run GUI on detached thread; main thread will post events to it
-  std::thread gui(open_gui);
+  std::thread gui(open_gui, 1, argv);
   gui.detach();
 
   // Main thread opens console to accept user input 
-  open_console(gdb);
+  open_console(argc, argv);
 
   return 0;
 }

@@ -35,6 +35,7 @@ class GDB {
     redi::pstream process;
     char buf[BUFSIZ];
     std::streamsize bufsz;
+    std::vector<GDBOutput> buf_output;
   public:
     GDB(std::vector<std::string> args);
     ~GDB(void);
@@ -102,12 +103,15 @@ void GDB::read_until_prompt(std::vector<GDBOutput> & buffer, bool trim_prompt) {
     std::string prompt = old_output.content; 
     buffer.pop_back();
 
-    // Erase part of the GDB output 
-    prompt.erase(prompt.size() - strlen(GDB_PROMPT), prompt.size());
+    // Discard last output if it contains only the prompt
+    if (prompt.size() > strlen(GDB_PROMPT)) {
+      // Erase part of the GDB output 
+      prompt.erase(prompt.size() - strlen(GDB_PROMPT), prompt.size());
 
-    // Add trimmed output back to the buffer
-    GDBOutput trimmed_output { prompt, old_output.is_error };
-    buffer.push_back(trimmed_output);
+      // Add trimmed output back to the buffer
+      GDBOutput trimmed_output { prompt, old_output.is_error };
+      buffer.push_back(trimmed_output);
+    }
   }
 }
 
@@ -121,23 +125,17 @@ bool GDB::is_alive() {
 
 // Returns true if the GDB process is running/debugging a program
 bool GDB::is_running_program() {
-  // Create output buffer 
-  std::vector<GDBOutput> gdb_output;
-
+  // Clear output buffer 
+  buf_output.clear();
+  
   // Call info program in GDB
   execute("info program");
 
   // Get result of command
-  read_until_prompt(gdb_output, true);
+  read_until_prompt(buf_output, true);
 
   // Output with "not being run" only appears when GDB is not running anything
-  for (GDBOutput output : gdb_output) {
-    if (string_contains(output.content, "not being run")) {
-      return false;
-    }
-  }
-  
-  return true; 
+  return !string_contains(buf_output.back().content, "not being run");
 }
 
 // Performs a non-blocking read. 

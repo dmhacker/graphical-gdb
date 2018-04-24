@@ -18,9 +18,11 @@ void update_console_and_gui(GDB & gdb, std::vector<GDBOutput> & gdb_output) {
   event->SetString(gdb.is_running_program() ? GDB_STATUS_RUNNING : GDB_STATUS_IDLE);
   wxTheApp->QueueEvent(event);
 
+  // If there is output to be printed ... 
   if (!gdb_output.empty()) {
+    // Iterate through every output line ...
     for (GDBOutput output : gdb_output) {
-      // Pass output to IO streams
+      // and pass it to its respective IO stream
       if (output.is_error) {
         std::cerr << output.content << std::flush;
       }

@@ -53,7 +53,13 @@ class GDBFrame : public wxFrame {
   private:
     void OnAbout(wxCommandEvent & event);
     void OnExit(wxCommandEvent & event);
+    void DoStatusBarUpdate(wxCommandEvent & event);
     wxDECLARE_EVENT_TABLE();
+};
+
+// wxWidgets additional event IDs
+enum {
+  ID_STATUS_BAR_UPDATE = 1
 };
 
 // Class constructor opens the process.
@@ -166,9 +172,14 @@ void GDBFrame::OnExit(wxCommandEvent & event) {
   Close(true);
 }
 
+void GDBFrame::DoStatusBarUpdate(wxCommandEvent & event) {
+  SetStatusText(event.GetString());
+}
+
 wxBEGIN_EVENT_TABLE(GDBFrame, wxFrame)
   EVT_MENU(wxID_EXIT, GDBFrame::OnExit)
   EVT_MENU(wxID_ABOUT, GDBFrame::OnAbout)
+  EVT_MENU(ID_STATUS_BAR_UPDATE, GDBFrame::DoStatusBarUpdate)
 wxEND_EVENT_TABLE()
 
 wxIMPLEMENT_APP_NO_MAIN(GDBApp);

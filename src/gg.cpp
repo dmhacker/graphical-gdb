@@ -6,13 +6,18 @@
 
 #include "gg.hpp"
 
-void write_console(GDB & gdb, std::string & gdb_output, std::string & gdb_error) {
+void update_console_and_gui(GDB & gdb, std::string & gdb_output, std::string & gdb_error) {
   // Clear string buffers 
   gdb_output.clear();
   gdb_error.clear();
 
   // Read from GDB to populate buffers
   gdb.read_until_prompt(gdb_output, gdb_error, true);
+
+  // Update GUI status bar
+  wxCommandEvent * event = new wxCommandEvent(wxEVT_NULL, ID_STATUS_BAR_UPDATE);
+  event->SetString(gdb.is_running_program() ? GDB_STATUS_RUNNING : GDB_STATUS_IDLE);
+  wxTheApp->QueueEvent(event);
 
   if (!gdb_error.empty() || !gdb_output.empty()) {
     // Pass output to IO streams
@@ -27,7 +32,7 @@ void open_console(GDB & gdb) {
   std::string gdb_error;
 
   // Display gdb introduction to user 
-  write_console(gdb, gdb_output, gdb_error);
+  update_console_and_gui(gdb, gdb_output, gdb_error);
 
   while (gdb.is_alive()) {
     // Read one line from stdin to process (blocking)
@@ -48,7 +53,7 @@ void open_console(GDB & gdb) {
       gdb.execute(buf_input);
 
       // Display the result of the command and the next prompt
-      write_console(gdb, gdb_output, gdb_error);
+      update_console_and_gui(gdb, gdb_output, gdb_error);
     }
 
     // Delete the input buffer, free up memory

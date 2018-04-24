@@ -8,29 +8,20 @@
 #define GDB_STATUS_IDLE "GDB is idle."
 #define GDB_STATUS_RUNNING "GDB is currently running a program."
 
-// GDB process mode uses its own stdin, stdout and stderr
+// GDB process mode should be completely self-contained. 
 const redi::pstreams::pmode GDB_PMODE = 
   redi::pstreams::pstdin | redi::pstreams::pstdout | redi::pstreams::pstderr;
 
-// Helper function for determining if a string ends with a certain value
-bool string_ends_with(std::string const & str, std::string const & ending) {
-  if (ending.size() > str.size()) 
-    return false;
-  return std::equal(ending.rbegin(), ending.rend(), str.rbegin());
-}
+// Custom event types sent from the console to the GUI for updates.
+const wxEventType gdbEVT_STATUS_BAR_UPDATE = wxNewEventType();
 
-// Helper function for determining if a string contains a value
-bool string_contains(std::string const & str, std::string const & value) {
-  return str.find(value) != std::string::npos;
-}
-
-// Struct to hold GDB output and indicate whether or not it is error output
+// Struct to hold GDB output and indicate if it is error output.
 typedef struct GDBOutput {
   std::string content;
   bool is_error;
 } GDBOutput;
 
-// GDB class that represents a process abstraction
+// Class that represents a GDB process abstraction.
 class GDB {
     redi::pstream process;
     char buf[BUFSIZ];
@@ -47,13 +38,13 @@ class GDB {
     void try_read(std::vector<GDBOutput> & buffer);
 };
 
-// wxWidgets application class (serves as an interface with GDB)
+// Class representing the GDB GUI application.
 class GDBApp : public wxApp {
   public:
     virtual bool OnInit();
 };
 
-// wxWidgets top level frame that goes with the GDB application
+// Class representing the GDB GUI top level display frame.
 class GDBFrame : public wxFrame {
   public:
     GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & size);
@@ -63,6 +54,28 @@ class GDBFrame : public wxFrame {
     void DoStatusBarUpdate(wxCommandEvent & event);
     wxDECLARE_EVENT_TABLE();
 };
+
+// Macros used for binding events to wxWidgets frame functions.
+wxBEGIN_EVENT_TABLE(GDBFrame, wxFrame)
+  EVT_MENU(wxID_EXIT, GDBFrame::OnExit)
+  EVT_MENU(wxID_ABOUT, GDBFrame::OnAbout)
+  EVT_COMMAND(wxID_ANY, gdbEVT_STATUS_BAR_UPDATE, GDBFrame::DoStatusBarUpdate)
+wxEND_EVENT_TABLE()
+
+// Macro to tell wxWidgets to use our GDB GUI application.
+wxIMPLEMENT_APP_NO_MAIN(GDBApp);
+
+// Helper function for determining if a string ends with a certain value.
+bool string_ends_with(std::string const & str, std::string const & ending) {
+  if (ending.size() > str.size()) 
+    return false;
+  return std::equal(ending.rbegin(), ending.rend(), str.rbegin());
+}
+
+// Helper function for determining if a string contains a value.
+bool string_contains(std::string const & str, std::string const & value) {
+  return str.find(value) != std::string::npos;
+}
 
 // Class constructor opens the process.
 GDB::GDB(std::vector<std::string> args) : 
@@ -110,7 +123,7 @@ void GDB::read_until_prompt(std::vector<GDBOutput> & buffer, bool trim_prompt) {
   }
 }
 
-// Returns true if the GDB process is still alive 
+// Returns true if the GDB process is still alive.
 bool GDB::is_alive() {
   bool exited = 
     process.out().rdbuf()->exited() || // Check process output buffer
@@ -118,7 +131,7 @@ bool GDB::is_alive() {
   return !exited;
 }
 
-// Returns true if the GDB process is running/debugging a program
+// Returns true if the GDB process is running/debugging a program.
 bool GDB::is_running_program() {
   // Clear output buffer 
   buf_output.clear();
@@ -151,6 +164,7 @@ void GDB::try_read(std::vector<GDBOutput> & buffer) {
   }
 }
 
+// Called when our application is initialized via wxEntry().
 bool GDBApp::OnInit() {
   // Determine screen and application dimensions
   long screen_x = wxSystemSettings::GetMetric(wxSYS_SCREEN_X);
@@ -170,41 +184,42 @@ bool GDBApp::OnInit() {
   return true;
 }
 
+// Called by GDBApp::OnInit() when it is initializing the top level frame.
 GDBFrame::GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & size) :
   wxFrame(NULL, wxID_ANY, title, pos, size) 
 {
+  // File section in the menu bar
   wxMenu * menuFile = new wxMenu;
   menuFile->Append(wxID_EXIT);
 
+  // Help section in the menu bar
   wxMenu * menuHelp = new wxMenu;
   menuHelp->Append(wxID_ABOUT);
 
+  // Menu bar on the top 
   wxMenuBar * menuBar = new wxMenuBar;
   menuBar->Append(menuFile, "&File");
   menuBar->Append(menuHelp, "&Help");
   SetMenuBar(menuBar);
 
+  // Status bar on the bottom
   CreateStatusBar();
   SetStatusText(GDB_STATUS_IDLE);
 }
 
+// Called when the user clicks on the About button in the menu bar.
 void GDBFrame::OnAbout(wxCommandEvent & event) {
   wxMessageBox("This is a wxWidget's Hello world sample",
                "About Hello World", wxOK | wxICON_INFORMATION);
 }
 
+// Called when the user quits the GUI.
 void GDBFrame::OnExit(wxCommandEvent & event) {
   Close(true);
 }
 
+// Called when then the console thread posts to the GUI thread
+// that a status bar update should be made.
 void GDBFrame::DoStatusBarUpdate(wxCommandEvent & event) {
   SetStatusText(event.GetString());
 }
-
-wxBEGIN_EVENT_TABLE(GDBFrame, wxFrame)
-  EVT_MENU(wxID_EXIT, GDBFrame::OnExit)
-  EVT_MENU(wxID_ABOUT, GDBFrame::OnAbout)
-  EVT_COMMAND(wxID_ANY, wxEVT_COMMAND_BUTTON_CLICKED, GDBFrame::DoStatusBarUpdate)
-wxEND_EVENT_TABLE()
-
-wxIMPLEMENT_APP_NO_MAIN(GDBApp);

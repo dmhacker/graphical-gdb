@@ -14,17 +14,17 @@ void update_console_and_gui(GDB & gdb, std::vector<GDBOutput> & gdb_output) {
   gdb.read_until_prompt(gdb_output, true);
 
   // Create event to update GUI status bar
-  wxCommandEvent * event = new wxCommandEvent(wxEVT_COMMAND_BUTTON_CLICKED);
-  event->SetString(gdb.is_running_program() ? GDB_STATUS_RUNNING : GDB_STATUS_IDLE);
+  wxCommandEvent * sbu_event = 
+    new wxCommandEvent(gdbEVT_STATUS_BAR_UPDATE);
+  sbu_event->SetString(
+      gdb.is_running_program() ? GDB_STATUS_RUNNING : GDB_STATUS_IDLE);
 
-  // Queue event if application has been created
+  // Queue events if application has been initialized on separate thread
   GDBApp * app = (GDBApp *) wxTheApp;
   wxWindow * window = app->GetTopWindow();
-  if (window) {
+  if (window) { // Window will be null if GDBApp::OnInit() hasn't been called
     wxEvtHandler * window_handler = window->GetEventHandler();
-    if (window_handler) {
-      window_handler->QueueEvent(event);
-    }
+    window_handler->QueueEvent(sbu_event);
   }
 
   // If there is output to be printed ... 

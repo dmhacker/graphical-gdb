@@ -1,13 +1,13 @@
-CC=g++
-FLAGS=-std=c++11
-LIBS=-lreadline `wx-config --cxxflags --libs` 
+CXX=g++
+CXXFLAGS=-std=c++11
+LDLIBS=-lreadline `wx-config --cxxflags --libs` 
 
 .PHONY: clean
 
 all: build/gg build/simpletest
 build/gg: src/gg.cpp src/gg.hpp
-	$(CC) $(FLAGS) $< -o $@ $(LIBS)
+	$(CXX) $(CXXFLAGS) $< -o $@ $(LDLIBS)
 build/simpletest: tests/simpletest.cpp
-	$(CC) $(FLAGS) $< -o $@ -g
+	$(CXX) $(CXXFLAGS) $< -o $@ -g
 clean:
 	rm -rf build/

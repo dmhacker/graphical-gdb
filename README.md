@@ -14,13 +14,13 @@ Running gg opens up a GUI that displays your program's stack, registers, variabl
 
 Any arguments that you pass to gg on startup will be passed to gdb.
 
-## Building 
+## Installation 
 
 ```
 sudo apt-get install gg
 ```
 
-Note that gg requires these packages to build from source:
+The other option is to build gg directly from source. Note that doing so these packages are requirements for the build process:
   * build-essential
   * libreadline-dev
   * libwxgtk3.0-dev

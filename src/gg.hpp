@@ -1,3 +1,6 @@
+#include <iostream>
+#include <sstream>
+
 #include <wx/wx.h>
 
 #include "pstream.hpp"
@@ -31,11 +34,9 @@ class GDB {
     GDB(std::vector<std::string> args);
     ~GDB(void);
     void execute(const char * command);
-    void read_until_prompt(std::vector<GDBOutput> & buffer, bool trim_prompt);
+    void read_until_prompt(std::ostream & output_buffer, std::ostream & error_buffer, bool trim_prompt);
     bool is_alive();
     bool is_running_program();
-  private:
-    void try_read(std::vector<GDBOutput> & buffer);
 };
 
 // Class representing the GDB GUI application.
@@ -98,27 +99,30 @@ void GDB::execute(const char * line) {
 // Method will try executing non-blocking reads until ... 
 //  a) the program quits
 //  b) it detects the prompt at the end of the stdout buffer
-void GDB::read_until_prompt(std::vector<GDBOutput> & buffer, bool trim_prompt) {
+void GDB::read_until_prompt(std::ostream & output_buffer, std::ostream & error_buffer, bool trim_prompt) {
   // Do non-blocking reads
-  do {
-    try_read(buffer);
-  } while (is_alive() && (buffer.empty() || !string_ends_with(buffer.back().content, GDB_PROMPT)));
+  bool hit_prompt = false;
+  while (is_alive() && !hit_prompt) {
+    // Read process's error stream and append to error string
+    while (bufsz = process.err().readsome(buf, sizeof(buf))) {
+      std::string error(buf, bufsz);
+      error_buffer << error << std::flush;
+    }
 
-  // Trim prompt from end if program is running and trim prompt is specified
-  if (is_alive() && trim_prompt) {
-    // Get the GDB output that contains the prompt and remove it from the buffer
-    GDBOutput old_output = buffer.back();
-    std::string prompt = old_output.content; 
-    buffer.pop_back();
+    // Read process's output stream and append to output string 
+    while (bufsz = process.out().readsome(buf, sizeof(buf))) {
+      std::string output(buf, bufsz);
 
-    // Discard last output if it contains only the prompt
-    if (prompt.size() > strlen(GDB_PROMPT)) {
-      // Erase part of the GDB output 
-      prompt.erase(prompt.size() - strlen(GDB_PROMPT), prompt.size());
+      // Signal a break if output ends with the prompt
+      if (string_ends_with(output, GDB_PROMPT)) {
+        hit_prompt = true;
+        // Trim the prompt from the output if specified
+        if (trim_prompt) {
+          output.erase(output.size() - strlen(GDB_PROMPT), output.size());
+        }
+      }
 
-      // Add trimmed output back to the buffer
-      GDBOutput trimmed_output { prompt, old_output.is_error };
-      buffer.push_back(trimmed_output);
+      output_buffer << output << std::flush;
     }
   }
 }
@@ -133,35 +137,18 @@ bool GDB::is_alive() {
 
 // Returns true if the GDB process is running/debugging a program.
 bool GDB::is_running_program() {
-  // Clear output buffer 
-  buf_output.clear();
-  
+  // Create output stream buffer 
+  // The buffer is also passed to error since the command produces no error
+  std::ostringstream output_buffer;
+
   // Call info program in GDB
   execute("info program");
 
   // Get result of command
-  read_until_prompt(buf_output, true);
+  read_until_prompt(output_buffer, output_buffer, true);
 
   // Output with "not being run" only appears when GDB is not running anything
-  return !string_contains(buf_output.back().content, "not being run");
-}
-
-// Performs a non-blocking read. 
-// Makes one pass over the process output/error streams to collect data. 
-void GDB::try_read(std::vector<GDBOutput> & buffer) {
-  // Read process's error stream and append to error string
-  while (bufsz = process.err().readsome(buf, sizeof(buf))) {
-    std::string error_string(buf, bufsz);
-    GDBOutput error { error_string, true }; 
-    buffer.push_back(error);
-  }
-
-  // Read process's output stream and append to output string 
-  while (bufsz = process.out().readsome(buf, sizeof(buf))) {
-    std::string output_string(buf, bufsz);
-    GDBOutput output { output_string, false };
-    buffer.push_back(output); 
-  }
+  return !string_contains(output_buffer.str(), "not being run");
 }
 
 // Called when our application is initialized via wxEntry().

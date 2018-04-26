@@ -20,6 +20,8 @@ class GDB {
     char buf[BUFSIZ];
     std::streamsize bufsz;
     std::vector<GDBOutput> buf_output;
+    bool running_program_flag;
+    bool running_program;
   public:
     GDB(std::vector<std::string> args);
     ~GDB(void);
@@ -27,6 +29,10 @@ class GDB {
     void read_until_prompt(std::ostream & output_buffer, std::ostream & error_buffer, bool trim_prompt);
     bool is_alive();
     bool is_running_program();
+    std::string get_source_code();
+    std::string get_assembly_code();
+  private:
+    std::string get_execution_output(const char * command);
 };
 
 // Class representing the GDB GUI application.

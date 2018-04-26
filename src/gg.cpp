@@ -29,7 +29,8 @@ bool string_contains(std::string const & str, std::string const & value) {
 
 // Class constructor opens the process.
 GDB::GDB(std::vector<std::string> args) : 
-  process("gdb", args, GDB_PMODE) {}
+  process("gdb", args, GDB_PMODE), 
+  running_program_flag(false), running_program(false) {}
 
 // Class desctructor closes the process.
 GDB::~GDB() {
@@ -41,6 +42,7 @@ void GDB::execute(const char * line) {
   if (is_alive() && line) {
     // Pass line directly to process
     process << line << std::endl;
+    running_program_flag = true;
   }
 }
 
@@ -84,20 +86,52 @@ bool GDB::is_alive() {
   return !exited;
 }
 
-// Returns true if the GDB process is running/debugging a program.
-bool GDB::is_running_program() {
-  // Create output stream buffer 
-  // The buffer is also passed to error since the command produces no error
+// PRIVATE (error is discarded, not recommended for normal use)
+std::string GDB::get_execution_output(const char * line) {
+  // Create stream buffers
   std::ostringstream output_buffer;
+  std::ostringstream error_buffer; // Will be discarded
 
-  // Call info program in GDB
-  execute("info program");
+  // Call line in GDB 
+  process << line << std::endl;
 
   // Get result of command
-  read_until_prompt(output_buffer, output_buffer, true);
+  read_until_prompt(output_buffer, error_buffer, true);
 
-  // Output with "not being run" only appears when GDB is not running anything
-  return !string_contains(output_buffer.str(), "not being run");
+  return output_buffer.str();
+}
+
+// Returns true if the GDB process is running/debugging a program.
+bool GDB::is_running_program() {
+  if (running_program_flag) {
+    // Output with "not being run" only appears when GDB is not running anything
+    running_program = !string_contains(get_execution_output("info program"), "not being run");
+
+    // Set flag to false, execute will reset it
+    running_program_flag = false;
+  }
+
+  return running_program; 
+}
+
+std::string GDB::get_source_code() {
+  if (is_running_program()) {
+    return get_execution_output("list");
+  }
+
+  // Not relevant for programs that aren't running
+  std::string empty;
+  return empty;
+}
+
+std::string GDB::get_assembly_code() {
+  if (is_running_program()) {
+    return get_execution_output("disassemble");
+  }
+  
+  // Not relevant for programs that aren't running
+  std::string empty;
+  return empty;
 }
 
 // Called when our application is initialized via wxEntry().

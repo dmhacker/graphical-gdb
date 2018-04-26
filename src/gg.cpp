@@ -6,7 +6,11 @@
 #include "gg.hpp"
 
 #define GDB_PROMPT "(gdb) "
+
 #define GDB_QUIT "quit"
+#define GDB_PROGRAM_STATUS "info program"
+#define GDB_SOURCE_LIST "list"
+#define GDB_ASSEMBLY_LIST "disassemble"
 
 #define GDB_STATUS_IDLE "GDB is idle."
 #define GDB_STATUS_RUNNING "GDB is currently running a program."
@@ -104,8 +108,11 @@ std::string GDB::get_execution_output(const char * line) {
 // Returns true if the GDB process is running/debugging a program.
 bool GDB::is_running_program() {
   if (running_program_flag) {
+    // Collect program status output
+    std::string program_status = get_execution_output(GDB_PROGRAM_STATUS);
+
     // Output with "not being run" only appears when GDB is not running anything
-    running_program = !string_contains(get_execution_output("info program"), "not being run");
+    running_program = !string_contains(program_status, "not being run");
 
     // Set flag to false, execute will reset it
     running_program_flag = false;
@@ -115,8 +122,9 @@ bool GDB::is_running_program() {
 }
 
 std::string GDB::get_source_code() {
+  // A running program has source code that can be printed
   if (is_running_program()) {
-    return get_execution_output("list");
+    return get_execution_output(GDB_SOURCE_LIST);
   }
 
   // Not relevant for programs that aren't running
@@ -125,8 +133,9 @@ std::string GDB::get_source_code() {
 }
 
 std::string GDB::get_assembly_code() {
+  // A running program has assembly that can be disassembled
   if (is_running_program()) {
-    return get_execution_output("disassemble");
+    return get_execution_output(GDB_ASSEMBLY_LIST);
   }
   
   // Not relevant for programs that aren't running
@@ -234,7 +243,14 @@ void open_console(int argc, char ** argv) {
 
     // A null pointer signals input EOF 
     if (!buf_input) {
+      // Print quit prompt since it isn't printed from input 
       std::cout << GDB_QUIT << std::endl;
+
+      // Execute the quit command
+      gdb.execute(GDB_QUIT);
+
+      // Display the result of the quit command
+      update_console_and_gui(gdb);
       break;
     }
 

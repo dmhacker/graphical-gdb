@@ -25,6 +25,8 @@
 #define GDB_STATUS_IDLE "GDB is idle."
 #define GDB_STATUS_RUNNING "GDB is currently running a program."
 #define GDB_NO_SOURCE_CODE "No source code information available."
+#define GDB_NO_LOCALS "No local variable information available."
+#define GDB_NO_PARAMS "No parameter information available."
 
 // Helper function for determining if a string ends with a certain value.
 bool string_ends_with(std::string const & str, std::string const & ending) {
@@ -38,12 +40,11 @@ bool string_contains(std::string const & str, std::string const & value) {
   return str.find(value) != std::string::npos;
 }
 
-// GDB process mode should be completely self-contained. 
-const redi::pstreams::pmode GDB_PMODE = 
-  redi::pstreams::pstdin | redi::pstreams::pstdout | redi::pstreams::pstderr;
-
 GDB::GDB(std::vector<std::string> args) : 
-  process("gdb", args, GDB_PMODE), 
+  process("gdb", args, 
+      redi::pstreams::pstdin | 
+      redi::pstreams::pstdout | 
+      redi::pstreams::pstderr), 
   saved_line_number(0),
   running_reset_flag(false), 
   running_program(false) {}
@@ -267,9 +268,23 @@ GDBFrame::GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & s
   wxBoxSizer * sizer = new wxBoxSizer(wxHORIZONTAL);
   panel->SetSizer(sizer);
   
-  // Create source code display
-  this->sourceCodeText = new wxStaticText(panel, wxID_ANY, wxT(GDB_NO_SOURCE_CODE));
+  // Create source code display and add to sizer
+  sourceCodeText = new wxStaticText(panel, wxID_ANY, wxT(GDB_NO_SOURCE_CODE));
   sizer->Add(sourceCodeText, 1, wxALL, 5);
+
+  // Add space
+  sizer->AddSpacer(20);
+
+  // Create local variables display and add to sizer
+  localsText = new wxStaticText(panel, wxID_ANY, wxT(GDB_NO_LOCALS));
+  sizer->Add(localsText, 1, wxALL, 5);
+
+  // Add space
+  sizer->AddSpacer(20);
+
+  // Create formal parameters display and add to sizer
+  paramsText = new wxStaticText(panel, wxID_ANY, wxT(GDB_NO_PARAMS));
+  sizer->Add(paramsText, 1, wxALL, 5);
 
   // Status bar on the bottom
   CreateStatusBar();
@@ -293,6 +308,14 @@ void GDBFrame::DoSourceCodeUpdate(wxCommandEvent & event) {
   sourceCodeText->SetLabel(event.GetString());
 }
 
+void GDBFrame::DoLocalsUpdate(wxCommandEvent & event) {
+  localsText->SetLabel(event.GetString());
+}
+
+void GDBFrame::DoParamsUpdate(wxCommandEvent & event) {
+  paramsText->SetLabel(event.GetString());
+}
+
 void update_console_and_gui(GDB & gdb) {
   // Read from GDB to populate buffer
   gdb.read_until_prompt(std::cout, std::cerr, true);
@@ -310,6 +333,10 @@ void update_console_and_gui(GDB & gdb) {
         new wxCommandEvent(gdbEVT_STATUS_BAR_UPDATE);
       wxCommandEvent * source_code_update = 
         new wxCommandEvent(gdbEVT_SOURCE_CODE_UPDATE);
+      wxCommandEvent * locals_update =
+        new wxCommandEvent(gdbEVT_LOCALS_UPDATE);
+      wxCommandEvent * params_update =
+        new wxCommandEvent(gdbEVT_PARAMS_UPDATE);
 
       // Set contents of events
       std::string status_bar_message;
@@ -317,15 +344,21 @@ void update_console_and_gui(GDB & gdb) {
       if (gdb.is_running_program()) {
         status_bar_update->SetString(GDB_STATUS_RUNNING);
         source_code_update->SetString(gdb.get_source_code());
+        locals_update->SetString(gdb.get_local_variables());
+        params_update->SetString(gdb.get_formal_parameters());
       }
       else {
         status_bar_update->SetString(GDB_STATUS_IDLE);
         source_code_update->SetString(GDB_NO_SOURCE_CODE);
+        locals_update->SetString(GDB_NO_LOCALS);
+        params_update->SetString(GDB_NO_PARAMS);
       }
 
       // Send events to GUI application
       handler->QueueEvent(status_bar_update);
       handler->QueueEvent(source_code_update); 
+      handler->QueueEvent(locals_update);
+      handler->QueueEvent(params_update);
     }
   }
 }

@@ -5,6 +5,8 @@
 // Custom event types sent from the console to the GUI for updates.
 const wxEventType gdbEVT_STATUS_BAR_UPDATE = wxNewEventType();
 const wxEventType gdbEVT_SOURCE_CODE_UPDATE = wxNewEventType();
+const wxEventType gdbEVT_LOCALS_UPDATE = wxNewEventType();
+const wxEventType gdbEVT_PARAMS_UPDATE = wxNewEventType();
 const wxEventType gdbEVT_ASSEMBLY_CODE_UPDATE = wxNewEventType();
 
 // Class that represents a GDB process abstraction.
@@ -74,7 +76,9 @@ class GDBApp : public wxApp {
 
 // Class representing the GDB GUI top level display frame.
 class GDBFrame : public wxFrame {
-  wxStaticText * sourceCodeText; // Displays source code text
+  wxStaticText * sourceCodeText; // Displays source code 
+  wxStaticText * localsText; // Displays local variables
+  wxStaticText * paramsText; // Displays formal parameters
   public:
     // Called by GDBApp::OnInit() when it is initializing the top level frame.
     GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & size);
@@ -93,6 +97,14 @@ class GDBFrame : public wxFrame {
     // the source code display should be updated.
     void DoSourceCodeUpdate(wxCommandEvent & event);
 
+    // Called when the console thread posts to the GUI thread that
+    // the local variable display should be updated.
+    void DoLocalsUpdate(wxCommandEvent & event);
+
+    // Called when the console thread posts to the GUI thread that
+    // the formal parameter display should be updated.
+    void DoParamsUpdate(wxCommandEvent & event);
+
     // Macro to specify that this frame has events that need binding
     wxDECLARE_EVENT_TABLE();
 };
@@ -103,6 +115,8 @@ wxBEGIN_EVENT_TABLE(GDBFrame, wxFrame)
   EVT_MENU(wxID_ABOUT, GDBFrame::OnAbout)
   EVT_COMMAND(wxID_ANY, gdbEVT_STATUS_BAR_UPDATE, GDBFrame::DoStatusBarUpdate)
   EVT_COMMAND(wxID_ANY, gdbEVT_SOURCE_CODE_UPDATE, GDBFrame::DoSourceCodeUpdate)
+  EVT_COMMAND(wxID_ANY, gdbEVT_LOCALS_UPDATE, GDBFrame::DoLocalsUpdate)
+  EVT_COMMAND(wxID_ANY, gdbEVT_PARAMS_UPDATE, GDBFrame::DoParamsUpdate)
 wxEND_EVENT_TABLE()
 
 // Macro to tell wxWidgets to use our GDB GUI application.

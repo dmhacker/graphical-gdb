@@ -7,12 +7,16 @@
 #define GDB_PROMPT "(gdb) "
 
 #define GDB_QUIT "quit"
-#define GDB_FRAME "frame"
-#define GDB_LIST "list"
+#define GDB_JUMP "jump"
+#define GDB_WHERE "where"
+#define GDB_LIST "list" 
 #define GDB_GET_LIST_SIZE "show listsize"
 #define GDB_SET_LIST_SIZE "set listsize"
 #define GDB_DISASSEMBLE "disassemble"
 #define GDB_INFO_PROGRAM "info program"
+#define GDB_TEMPORARY_BREAK "tbreak"
+
+#define GDB_DISPLAY_LIST_SIZE 20
 
 #define GDB_STATUS_IDLE "GDB is idle."
 #define GDB_STATUS_RUNNING "GDB is currently running a program."
@@ -37,7 +41,9 @@ bool string_contains(std::string const & str, std::string const & value) {
 // Class constructor opens the process.
 GDB::GDB(std::vector<std::string> args) : 
   process("gdb", args, GDB_PMODE), 
-  running_program_flag(false), running_program(false) {}
+  saved_line_number(0),
+  running_reset_flag(false), 
+  running_program(false) {}
 
 // Class desctructor closes the process.
 GDB::~GDB() {
@@ -45,12 +51,40 @@ GDB::~GDB() {
 }
 
 // Execute the given command by passing it to the process.
-void GDB::execute(const char * line) {
-  if (is_alive() && line) {
+void GDB::execute(const char * command) {
+  execute(command, true);
+}
+
+// PRIVATE (option to disable setting internal flags after an execution)
+void GDB::execute(const char * command, bool set_flags) {
+  if (is_alive() && command) {
     // Pass line directly to process
-    process << line << std::endl;
-    running_program_flag = true;
+    process << command << std::endl;
+
+    // Mark reset flag for running program
+    running_reset_flag = set_flags;
   }
+}
+
+// PRIVATE (error is discarded, not recommended for normal use)
+std::string GDB::execute_and_read(const char * command) {
+  // Call line in GDB 
+  execute(command, false);  
+
+  // Create stream buffers
+  std::ostringstream output_buffer;
+  std::ostringstream error_buffer; // Will be discarded
+
+  // Get result of command
+  read_until_prompt(output_buffer, error_buffer, true);
+
+  return output_buffer.str();
+}
+
+// PRIVATE (special case of execute and read with an integer argument)
+std::string GDB::execute_and_read(const char * command, long arg) {
+  std::string line = std::string(command) + " " + std::to_string(arg);
+  return execute_and_read(line.c_str());
 }
 
 // Read whatever output and error is stored in the process.
@@ -107,43 +141,46 @@ bool GDB::is_alive() {
   return !exited;
 }
 
-// PRIVATE (error is discarded, not recommended for normal use)
-std::string GDB::get_execution_output(const char * line) {
-  // Create stream buffers
-  std::ostringstream output_buffer;
-  std::ostringstream error_buffer; // Will be discarded
-
-  // Call line in GDB 
-  process << line << std::endl;
-
-  // Get result of command
-  read_until_prompt(output_buffer, error_buffer, true);
-
-  return output_buffer.str();
-}
-
 // Returns true if the GDB process is running/debugging a program.
 bool GDB::is_running_program() {
-  if (running_program_flag) {
+  if (running_reset_flag) {
     // Collect program status output
-    std::string program_status = get_execution_output(GDB_INFO_PROGRAM);
+    std::string program_status = execute_and_read(GDB_INFO_PROGRAM);
 
     // Output with "not being run" only appears when GDB is not running anything
     running_program = !string_contains(program_status, "not being run");
 
     // Set flag to false, execute will reset it
-    running_program_flag = false;
+    running_reset_flag = false;
   }
 
   return running_program; 
 }
 
+// Gets the source code around where GDB is positioned at 
 std::string GDB::get_source_code() {
   // A running program has source code that can be printed
   if (is_running_program()) {
+    // Save the current list size and list line number
+    long list_size = get_source_list_size();
+    long line_number = get_source_line_number();
 
-    // TODO: Execute pre- and post- commands to save state of GDB before list call
-    std::string source = get_execution_output(GDB_LIST);
+    // Get source code lines
+    execute_and_read(GDB_SET_LIST_SIZE, GDB_DISPLAY_LIST_SIZE);
+    std::string source = execute_and_read(GDB_LIST, line_number);
+
+    // Set a temporary breakpoint at the same line we are at and jump back
+    // This resets the internal list flag and preserves where we are in terms of program execution
+    if (line_number != saved_line_number) {
+      execute_and_read(GDB_TEMPORARY_BREAK, line_number);
+      execute_and_read(GDB_JUMP, line_number);
+    }
+
+    // Reset line size to what the user had originally
+    execute_and_read(GDB_SET_LIST_SIZE, list_size);
+
+    // Save the line number we were last at
+    saved_line_number = line_number;
 
     return source; 
   }
@@ -153,15 +190,31 @@ std::string GDB::get_source_code() {
   return empty;
 }
 
+// Gets the assembly code for the function GDB is in 
 std::string GDB::get_assembly_code() {
   // A running program has assembly that can be disassembled
   if (is_running_program()) {
-    return get_execution_output(GDB_DISASSEMBLE);
+    return execute_and_read(GDB_DISASSEMBLE);
   }
   
   // Not relevant for programs that aren't running
   std::string empty;
   return empty;
+}
+
+// Gets GDB's current source code list size
+long GDB::get_source_list_size() {
+  std::string output = execute_and_read(GDB_GET_LIST_SIZE);
+  std::string last_word = output.substr(output.find_last_of(' '), output.size() - 1);
+  return std::stol(last_word); 
+}
+
+// Gets the current line number GDB is executing
+long GDB::get_source_line_number() {
+  std::string output = execute_and_read(GDB_WHERE);
+  std::string target_line = output.substr(output.find(':') + 1, output.size());
+  std::string target_word = target_line.substr(0, target_line.find('\n'));
+  return std::stol(target_word);
 }
 
 // Called when our application is initialized via wxEntry().
@@ -243,8 +296,9 @@ void update_console_and_gui(GDB & gdb) {
   // Read from GDB to populate buffer
   gdb.read_until_prompt(std::cout, std::cerr, true);
 
-  // Queue events if application has been initialized on separate thread
-  if (wxTheApp) { // App will be null if wxEntry() hasn't been called
+  // Queue events if gdb is alive and 
+  // application has been initialized on separate thread
+  if (gdb.is_alive() && wxTheApp) { // App will be null if wxEntry() hasn't been called
     GDBApp * app = (GDBApp *) wxTheApp;
     wxWindow * window = app->GetTopWindow();
     if (window) { // Window will be null if GDBApp::OnInit() hasn't been called
@@ -257,6 +311,8 @@ void update_console_and_gui(GDB & gdb) {
         new wxCommandEvent(gdbEVT_SOURCE_CODE_UPDATE);
 
       // Set contents of events
+      std::string status_bar_message;
+      std::string source_code_message;
       if (gdb.is_running_program()) {
         status_bar_update->SetString(GDB_STATUS_RUNNING);
         source_code_update->SetString(gdb.get_source_code());
@@ -266,7 +322,7 @@ void update_console_and_gui(GDB & gdb) {
         source_code_update->SetString(GDB_NO_SOURCE_CODE);
       }
 
-      // Pass events to the window
+      // Send events to GUI application
       handler->QueueEvent(status_bar_update);
       handler->QueueEvent(source_code_update); 
     }

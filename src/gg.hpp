@@ -15,8 +15,9 @@ class GDB {
     redi::pstream process;
     char buf[BUFSIZ];
     std::streamsize bufsz;
-    bool running_program_flag;
     bool running_program;
+    bool running_reset_flag;
+    long saved_line_number;
   public:
     GDB(std::vector<std::string> args);
     ~GDB(void);
@@ -26,8 +27,12 @@ class GDB {
     bool is_running_program();
     std::string get_source_code();
     std::string get_assembly_code();
+    long get_source_list_size();
+    long get_source_line_number();
   private:
-    std::string get_execution_output(const char * command);
+    void execute(const char * command, bool set_flags);
+    std::string execute_and_read(const char * command);
+    std::string execute_and_read(const char * command, long arg);
 };
 
 // Class representing the GDB GUI application.

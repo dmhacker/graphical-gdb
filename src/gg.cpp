@@ -1,10 +1,8 @@
 #include <thread>
 
 #include <readline/readline.h>
-#include <readline/history.h>
-
-#include "gg.hpp"
-
+#include <readline/history.h> 
+#include "gg.hpp" 
 #define GDB_PROMPT "(gdb) "
 
 #define GDB_QUIT "quit"
@@ -14,6 +12,7 @@
 
 #define GDB_STATUS_IDLE "GDB is idle."
 #define GDB_STATUS_RUNNING "GDB is currently running a program."
+#define GDB_NO_SOURCE_CODE "No source code information available."
 
 // GDB process mode should be completely self-contained. 
 const redi::pstreams::pmode GDB_PMODE = 
@@ -181,6 +180,15 @@ GDBFrame::GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & s
   menuBar->Append(menuHelp, "&Help");
   SetMenuBar(menuBar);
 
+  // Create main panel and sizer
+  wxBoxSizer * sizer = new wxBoxSizer(wxHORIZONTAL);
+  wxPanel * panel = new wxPanel(this, wxID_ANY);
+  panel->SetSizer(sizer);
+  
+  // Create source code display
+  this->sourceCodeText = new wxStaticText(panel, wxID_ANY, wxT(GDB_NO_SOURCE_CODE));
+  sizer->Add(sourceCodeText, 1, wxALL, 5);
+
   // Status bar on the bottom
   CreateStatusBar();
   SetStatusText(GDB_STATUS_IDLE);
@@ -203,22 +211,41 @@ void GDBFrame::DoStatusBarUpdate(wxCommandEvent & event) {
   SetStatusText(event.GetString());
 }
 
+// Called when the console thread posts to the GUI thread
+// that the program has source code to be displayed
+void GDBFrame::DoSourceCodeUpdate(wxCommandEvent & event) {
+  sourceCodeText->SetLabel(event.GetString());
+}
+
 void update_console_and_gui(GDB & gdb) {
   // Read from GDB to populate buffer
   gdb.read_until_prompt(std::cout, std::cerr, true);
-
-  // Create event to update GUI status bar
-  wxCommandEvent * sbu_event = 
-    new wxCommandEvent(gdbEVT_STATUS_BAR_UPDATE);
-  sbu_event->SetString(
-      gdb.is_running_program() ? GDB_STATUS_RUNNING : GDB_STATUS_IDLE);
 
   // Queue events if application has been initialized on separate thread
   GDBApp * app = (GDBApp *) wxTheApp;
   wxWindow * window = app->GetTopWindow();
   if (window) { // Window will be null if GDBApp::OnInit() hasn't been called
-    wxEvtHandler * window_handler = window->GetEventHandler();
-    window_handler->QueueEvent(sbu_event);
+    wxEvtHandler * handler = window->GetEventHandler();
+
+    // Create event objects
+    wxCommandEvent * status_bar_update = 
+      new wxCommandEvent(gdbEVT_STATUS_BAR_UPDATE);
+    wxCommandEvent * source_code_update = 
+      new wxCommandEvent(gdbEVT_SOURCE_CODE_UPDATE);
+   
+    // Set contents of events
+    if (gdb.is_running_program()) {
+      status_bar_update->SetString(GDB_STATUS_RUNNING);
+      source_code_update->SetString(gdb.get_source_code());
+    }
+    else {
+      status_bar_update->SetString(GDB_STATUS_IDLE);
+      source_code_update->SetString(GDB_NO_SOURCE_CODE);
+    }
+
+    // Pass events to the window
+    handler->QueueEvent(status_bar_update);
+    handler->QueueEvent(source_code_update); 
   }
 }
 

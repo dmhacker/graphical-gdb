@@ -3,12 +3,16 @@
 #include <readline/readline.h>
 #include <readline/history.h> 
 #include "gg.hpp" 
+
 #define GDB_PROMPT "(gdb) "
 
 #define GDB_QUIT "quit"
-#define GDB_PROGRAM_STATUS "info program"
-#define GDB_SOURCE_LIST "list"
-#define GDB_ASSEMBLY_LIST "disassemble"
+#define GDB_FRAME "frame"
+#define GDB_LIST "list"
+#define GDB_GET_LIST_SIZE "show listsize"
+#define GDB_SET_LIST_SIZE "set listsize"
+#define GDB_DISASSEMBLE "disassemble"
+#define GDB_INFO_PROGRAM "info program"
 
 #define GDB_STATUS_IDLE "GDB is idle."
 #define GDB_STATUS_RUNNING "GDB is currently running a program."
@@ -64,20 +68,34 @@ void GDB::read_until_prompt(std::ostream & output_buffer, std::ostream & error_b
     }
 
     // Read process's output stream and append to output string 
+    std::string last_output; // Intermediate buffer used to hold last line of output
     while (bufsz = process.out().readsome(buf, sizeof(buf))) {
       std::string output(buf, bufsz);
 
       // Signal a break if output ends with the prompt
-      if (string_ends_with(output, GDB_PROMPT)) {
+      std::string combined_output = last_output + output; // Prompt can be split between two lines 
+      if (string_ends_with(combined_output, GDB_PROMPT)) {
         hit_prompt = true;
+
         // Trim the prompt from the output if specified
         if (trim_prompt) {
-          output.erase(output.size() - strlen(GDB_PROMPT), output.size());
+          combined_output.erase(combined_output.size() - strlen(GDB_PROMPT), combined_output.size());
         }
+        
+        // Next output to print should be the combined output (prevents double printing)
+        last_output = combined_output;
       }
+      else {
+        // Flush last output
+        output_buffer << last_output << std::flush;
 
-      output_buffer << output << std::flush;
+        // Set next output to print to be the current output
+        last_output = output;
+      }
     }
+
+    // Flush last output that wasn't emptied by the loop
+    output_buffer << last_output << std::flush;
   }
 }
 
@@ -108,7 +126,7 @@ std::string GDB::get_execution_output(const char * line) {
 bool GDB::is_running_program() {
   if (running_program_flag) {
     // Collect program status output
-    std::string program_status = get_execution_output(GDB_PROGRAM_STATUS);
+    std::string program_status = get_execution_output(GDB_INFO_PROGRAM);
 
     // Output with "not being run" only appears when GDB is not running anything
     running_program = !string_contains(program_status, "not being run");
@@ -123,7 +141,11 @@ bool GDB::is_running_program() {
 std::string GDB::get_source_code() {
   // A running program has source code that can be printed
   if (is_running_program()) {
-    return get_execution_output(GDB_SOURCE_LIST);
+
+    // TODO: Execute pre- and post- commands to save state of GDB before list call
+    std::string source = get_execution_output(GDB_LIST);
+
+    return source; 
   }
 
   // Not relevant for programs that aren't running
@@ -134,7 +156,7 @@ std::string GDB::get_source_code() {
 std::string GDB::get_assembly_code() {
   // A running program has assembly that can be disassembled
   if (is_running_program()) {
-    return get_execution_output(GDB_ASSEMBLY_LIST);
+    return get_execution_output(GDB_DISASSEMBLE);
   }
   
   // Not relevant for programs that aren't running
@@ -222,30 +244,32 @@ void update_console_and_gui(GDB & gdb) {
   gdb.read_until_prompt(std::cout, std::cerr, true);
 
   // Queue events if application has been initialized on separate thread
-  GDBApp * app = (GDBApp *) wxTheApp;
-  wxWindow * window = app->GetTopWindow();
-  if (window) { // Window will be null if GDBApp::OnInit() hasn't been called
-    wxEvtHandler * handler = window->GetEventHandler();
+  if (wxTheApp) { // App will be null if wxEntry() hasn't been called
+    GDBApp * app = (GDBApp *) wxTheApp;
+    wxWindow * window = app->GetTopWindow();
+    if (window) { // Window will be null if GDBApp::OnInit() hasn't been called
+      wxEvtHandler * handler = window->GetEventHandler();
 
-    // Create event objects
-    wxCommandEvent * status_bar_update = 
-      new wxCommandEvent(gdbEVT_STATUS_BAR_UPDATE);
-    wxCommandEvent * source_code_update = 
-      new wxCommandEvent(gdbEVT_SOURCE_CODE_UPDATE);
-   
-    // Set contents of events
-    if (gdb.is_running_program()) {
-      status_bar_update->SetString(GDB_STATUS_RUNNING);
-      source_code_update->SetString(gdb.get_source_code());
-    }
-    else {
-      status_bar_update->SetString(GDB_STATUS_IDLE);
-      source_code_update->SetString(GDB_NO_SOURCE_CODE);
-    }
+      // Create event objects
+      wxCommandEvent * status_bar_update = 
+        new wxCommandEvent(gdbEVT_STATUS_BAR_UPDATE);
+      wxCommandEvent * source_code_update = 
+        new wxCommandEvent(gdbEVT_SOURCE_CODE_UPDATE);
 
-    // Pass events to the window
-    handler->QueueEvent(status_bar_update);
-    handler->QueueEvent(source_code_update); 
+      // Set contents of events
+      if (gdb.is_running_program()) {
+        status_bar_update->SetString(GDB_STATUS_RUNNING);
+        source_code_update->SetString(gdb.get_source_code());
+      }
+      else {
+        status_bar_update->SetString(GDB_STATUS_IDLE);
+        source_code_update->SetString(GDB_NO_SOURCE_CODE);
+      }
+
+      // Pass events to the window
+      handler->QueueEvent(status_bar_update);
+      handler->QueueEvent(source_code_update); 
+    }
   }
 }
 

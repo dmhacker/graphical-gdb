@@ -1,4 +1,6 @@
 #include <thread>
+#include <iostream>
+#include <sstream>
 
 #include <readline/readline.h>
 #include <readline/history.h> 
@@ -13,18 +15,16 @@
 #define GDB_GET_LIST_SIZE "show listsize"
 #define GDB_SET_LIST_SIZE "set listsize"
 #define GDB_DISASSEMBLE "disassemble"
+#define GDB_INFO_ARGUMENTS "info args"
+#define GDB_INFO_LOCALS "info locals"
 #define GDB_INFO_PROGRAM "info program"
 #define GDB_TEMPORARY_BREAK "tbreak"
 
-#define GDB_DISPLAY_LIST_SIZE 20
+#define GDB_DISPLAY_LIST_SIZE 25
 
 #define GDB_STATUS_IDLE "GDB is idle."
 #define GDB_STATUS_RUNNING "GDB is currently running a program."
 #define GDB_NO_SOURCE_CODE "No source code information available."
-
-// GDB process mode should be completely self-contained. 
-const redi::pstreams::pmode GDB_PMODE = 
-  redi::pstreams::pstdin | redi::pstreams::pstdout | redi::pstreams::pstderr;
 
 // Helper function for determining if a string ends with a certain value.
 bool string_ends_with(std::string const & str, std::string const & ending) {
@@ -38,24 +38,24 @@ bool string_contains(std::string const & str, std::string const & value) {
   return str.find(value) != std::string::npos;
 }
 
-// Class constructor opens the process.
+// GDB process mode should be completely self-contained. 
+const redi::pstreams::pmode GDB_PMODE = 
+  redi::pstreams::pstdin | redi::pstreams::pstdout | redi::pstreams::pstderr;
+
 GDB::GDB(std::vector<std::string> args) : 
   process("gdb", args, GDB_PMODE), 
   saved_line_number(0),
   running_reset_flag(false), 
   running_program(false) {}
 
-// Class desctructor closes the process.
 GDB::~GDB() {
   process.close();
 }
 
-// Execute the given command by passing it to the process.
 void GDB::execute(const char * command) {
   execute(command, true);
 }
 
-// PRIVATE (option to disable setting internal flags after an execution)
 void GDB::execute(const char * command, bool set_flags) {
   if (is_alive() && command) {
     // Pass line directly to process
@@ -66,31 +66,24 @@ void GDB::execute(const char * command, bool set_flags) {
   }
 }
 
-// PRIVATE (error is discarded, not recommended for normal use)
 std::string GDB::execute_and_read(const char * command) {
   // Call line in GDB 
   execute(command, false);  
 
-  // Create stream buffers
-  std::ostringstream output_buffer;
-  std::ostringstream error_buffer; // Will be discarded
+  // Create stream buffer
+  std::ostringstream buffer;
 
   // Get result of command
-  read_until_prompt(output_buffer, error_buffer, true);
+  read_until_prompt(buffer, buffer, true);
 
-  return output_buffer.str();
+  return buffer.str();
 }
 
-// PRIVATE (special case of execute and read with an integer argument)
 std::string GDB::execute_and_read(const char * command, long arg) {
   std::string line = std::string(command) + " " + std::to_string(arg);
   return execute_and_read(line.c_str());
 }
 
-// Read whatever output and error is stored in the process.
-// Method will try executing non-blocking reads until ... 
-//  a) the program quits
-//  b) it detects the prompt at the end of the stdout buffer
 void GDB::read_until_prompt(std::ostream & output_buffer, std::ostream & error_buffer, bool trim_prompt) {
   // Do non-blocking reads
   bool hit_prompt = false;
@@ -133,7 +126,6 @@ void GDB::read_until_prompt(std::ostream & output_buffer, std::ostream & error_b
   }
 }
 
-// Returns true if the GDB process is still alive.
 bool GDB::is_alive() {
   bool exited = 
     process.out().rdbuf()->exited() || // Check process output buffer
@@ -141,7 +133,6 @@ bool GDB::is_alive() {
   return !exited;
 }
 
-// Returns true if the GDB process is running/debugging a program.
 bool GDB::is_running_program() {
   if (running_reset_flag) {
     // Collect program status output
@@ -157,7 +148,6 @@ bool GDB::is_running_program() {
   return running_program; 
 }
 
-// Gets the source code around where GDB is positioned at 
 std::string GDB::get_source_code() {
   // A running program has source code that can be printed
   if (is_running_program()) {
@@ -190,7 +180,28 @@ std::string GDB::get_source_code() {
   return empty;
 }
 
-// Gets the assembly code for the function GDB is in 
+std::string GDB::get_local_variables() {
+  // A running program has local variables
+  if (is_running_program()) {
+    return execute_and_read(GDB_INFO_LOCALS);
+  }
+  
+  // Not relevant for programs that aren't running
+  std::string empty;
+  return empty;
+}
+
+std::string GDB::get_formal_parameters() {
+  // A running program has formal parameters 
+  if (is_running_program()) {
+    return execute_and_read(GDB_INFO_ARGUMENTS);
+  }
+  
+  // Not relevant for programs that aren't running
+  std::string empty;
+  return empty;
+}
+
 std::string GDB::get_assembly_code() {
   // A running program has assembly that can be disassembled
   if (is_running_program()) {
@@ -202,14 +213,12 @@ std::string GDB::get_assembly_code() {
   return empty;
 }
 
-// Gets GDB's current source code list size
 long GDB::get_source_list_size() {
   std::string output = execute_and_read(GDB_GET_LIST_SIZE);
   std::string last_word = output.substr(output.find_last_of(' '), output.size() - 1);
   return std::stol(last_word); 
 }
 
-// Gets the current line number GDB is executing
 long GDB::get_source_line_number() {
   std::string output = execute_and_read(GDB_WHERE);
   std::string target_line = output.substr(output.find(':') + 1, output.size());
@@ -217,7 +226,6 @@ long GDB::get_source_line_number() {
   return std::stol(target_word);
 }
 
-// Called when our application is initialized via wxEntry().
 bool GDBApp::OnInit() {
   // Determine screen and application dimensions
   long screen_x = wxSystemSettings::GetMetric(wxSYS_SCREEN_X);
@@ -237,7 +245,6 @@ bool GDBApp::OnInit() {
   return true;
 }
 
-// Called by GDBApp::OnInit() when it is initializing the top level frame.
 GDBFrame::GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & size) :
   wxFrame(NULL, wxID_ANY, title, pos, size) 
 {
@@ -256,8 +263,8 @@ GDBFrame::GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & s
   SetMenuBar(menuBar);
 
   // Create main panel and sizer
-  wxBoxSizer * sizer = new wxBoxSizer(wxHORIZONTAL);
   wxPanel * panel = new wxPanel(this, wxID_ANY);
+  wxBoxSizer * sizer = new wxBoxSizer(wxHORIZONTAL);
   panel->SetSizer(sizer);
   
   // Create source code display
@@ -269,25 +276,19 @@ GDBFrame::GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & s
   SetStatusText(GDB_STATUS_IDLE);
 }
 
-// Called when the user clicks on the About button in the menu bar.
 void GDBFrame::OnAbout(wxCommandEvent & event) {
   wxMessageBox("This is a wxWidget's Hello world sample",
                "About Hello World", wxOK | wxICON_INFORMATION);
 }
 
-// Called when the user quits the GUI.
 void GDBFrame::OnExit(wxCommandEvent & event) {
   Close(true);
 }
 
-// Called when then the console thread posts to the GUI thread
-// that a status bar update should be made.
 void GDBFrame::DoStatusBarUpdate(wxCommandEvent & event) {
   SetStatusText(event.GetString());
 }
 
-// Called when the console thread posts to the GUI thread
-// that the program has source code to be displayed
 void GDBFrame::DoSourceCodeUpdate(wxCommandEvent & event) {
   sourceCodeText->SetLabel(event.GetString());
 }

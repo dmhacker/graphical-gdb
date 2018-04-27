@@ -24,7 +24,7 @@ int main() {
   // Test endianess
   int val = 0x30313233;
   char * ptr = (char *) &val;
-  char * correct = "0123";
+  char * correct = (char *) "0123";
  
   // What a big endian system would print
   std::cout << "Big endian system: " << correct << std::endl;

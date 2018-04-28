@@ -107,16 +107,17 @@ class GDBSourcePanel : public wxPanel {
 
 // GUI top level display frame.
 class GDBFrame : public wxFrame {
+  wxString command;
+  wxString args;
   GDBSourcePanel * sourcePanel;
   public:
     // Called by GDBApp::OnInit() when it is initializing the top level frame.
-    GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & size);
+    GDBFrame(const wxString & title, 
+        const wxString & clcommand, const wxString & clargs,
+        const wxPoint & pos, const wxSize & size);
   private:
     // Called when the user clicks on the About button in the menu bar.
-    void OnAbout(wxCommandEvent & event) {
-      wxMessageBox("This is a wxWidget's Hello world sample",
-                   "About Hello World", wxOK | wxICON_INFORMATION);
-    }
+    void OnAbout(wxCommandEvent & event);
 
     // Called when the user quits the GUI.
     void OnExit(wxCommandEvent & event) {

@@ -6,6 +6,11 @@
 #include <readline/history.h> 
 #include "gg.hpp" 
 
+#define GG_ABOUT_TITLE "About GG"
+#define GG_VERSION "0.0.1"
+#define GG_AUTHORS "David Hacker"
+#define GG_LICENSE "GNU GPL v3.0"
+
 #define GDB_PROMPT "(gdb) " 
 #define GDB_QUIT "quit"
 #define GDB_JUMP "jump"
@@ -21,6 +26,7 @@
 
 #define GDB_DISPLAY_LIST_SIZE 25
 
+#define GDB_FRAME_TITLE "GDB Display"
 #define GDB_STATUS_IDLE "GDB is idle."
 #define GDB_STATUS_RUNNING "GDB is currently running a program."
 #define GDB_NO_SOURCE_CODE "No source code information available."
@@ -238,8 +244,17 @@ bool GDBApp::OnInit() {
   long frame_x = screen_x / 2;
   long frame_y = screen_y / 2;
 
+  // Build command used to initialize application 
+  std::string args;
+  for (int i = 1; i < wxApp::argc; i++) {
+    args.append(wxApp::argv[i]);
+    if (i < wxApp::argc - 1) {
+      args.append(" ");
+    }
+  }
+
   // Create main frame and display 
-  GDBFrame * frame = new GDBFrame("GDB Display", 
+  GDBFrame * frame = new GDBFrame(GDB_FRAME_TITLE, wxApp::argv[0], args, 
       wxPoint((screen_x - frame_x) / 2, (screen_y - frame_y) / 2), 
       wxSize(frame_x, frame_y));
   frame->Show(true);
@@ -250,8 +265,11 @@ bool GDBApp::OnInit() {
   return true;
 }
 
-GDBFrame::GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & size) :
-  wxFrame(NULL, wxID_ANY, title, pos, size) 
+GDBFrame::GDBFrame(const wxString & title, 
+    const wxString & clcommand, const wxString & clargs,
+    const wxPoint & pos, const wxSize & size) :
+  wxFrame(NULL, wxID_ANY, title, pos, size), 
+  command(clcommand), args(clargs)
 {
   // File section in the menu bar
   wxMenu * menuFile = new wxMenu();
@@ -273,6 +291,27 @@ GDBFrame::GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & s
    // Status bar on the bottom
   CreateStatusBar();
   SetStatusText(GDB_STATUS_IDLE);
+}
+
+void GDBFrame::OnAbout(wxCommandEvent & event) {
+  // Display static information
+  const char * information = 
+    "\nVersion: v"
+    GG_VERSION
+    "\nAuthors: "
+    GG_AUTHORS
+    "\nLicense: "
+    GG_LICENSE;
+
+  // Display per-instance information 
+  std::string text(information);
+  text.append("\n\nCommand: ");
+  text.append(command.c_str());
+  text.append("\nArguments: ");
+  text.append(args.c_str());
+
+  // Show message box with the text
+  wxMessageBox(text, GG_ABOUT_TITLE, wxOK | wxICON_INFORMATION);
 }
 
 GDBSourcePanel::GDBSourcePanel(wxWindow * parent) :
@@ -422,7 +461,7 @@ void open_gui(int argc, char ** argv) {
 
 int main(int argc, char ** argv) {
   // Run GUI on detached thread; main thread will post events to it
-  std::thread gui(open_gui, 1, argv);
+  std::thread gui(open_gui, argc, argv);
   gui.detach();
 
   // Main thread opens console to accept user input 

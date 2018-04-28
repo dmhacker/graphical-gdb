@@ -6,8 +6,7 @@
 #include <readline/history.h> 
 #include "gg.hpp" 
 
-#define GDB_PROMPT "(gdb) "
-
+#define GDB_PROMPT "(gdb) " 
 #define GDB_QUIT "quit"
 #define GDB_JUMP "jump"
 #define GDB_WHERE "where"
@@ -264,27 +263,38 @@ GDBFrame::GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & s
   SetMenuBar(menuBar);
 
   // Create main panel and sizer
-  wxPanel * panel = new wxPanel(this, wxID_ANY);
+  wxScrolledWindow * panel = new wxScrolledWindow(this, wxID_ANY);
   wxBoxSizer * sizer = new wxBoxSizer(wxHORIZONTAL);
-  panel->SetSizer(sizer);
-  
+
+  // Style for future text boxes
+  long textCtrlStyle = wxTE_MULTILINE | wxTE_READONLY | wxTE_RICH | wxHSCROLL | wxVSCROLL;
+
   // Create source code display and add to sizer
-  sourceCodeText = new wxStaticText(panel, wxID_ANY, wxT(GDB_NO_SOURCE_CODE));
-  sizer->Add(sourceCodeText, 1, wxALL, 5);
+  sourceCodeText = new wxTextCtrl(panel, wxID_ANY, 
+      wxT(GDB_NO_SOURCE_CODE),
+      wxDefaultPosition, wxDefaultSize, textCtrlStyle);
+  sizer->Add(sourceCodeText, 1, wxALL | wxEXPAND, 5);
 
   // Add space
-  sizer->AddSpacer(20);
+  sizer->AddSpacer(10);
 
   // Create local variables display and add to sizer
-  localsText = new wxStaticText(panel, wxID_ANY, wxT(GDB_NO_LOCALS));
-  sizer->Add(localsText, 1, wxALL, 5);
+  localsText = new wxTextCtrl(panel, wxID_ANY, 
+      wxT(GDB_NO_LOCALS),
+      wxDefaultPosition, wxDefaultSize, textCtrlStyle);
+  sizer->Add(localsText, 1, wxALL | wxEXPAND, 5);
 
   // Add space
-  sizer->AddSpacer(20);
+  sizer->AddSpacer(10);
 
   // Create formal parameters display and add to sizer
-  paramsText = new wxStaticText(panel, wxID_ANY, wxT(GDB_NO_PARAMS));
-  sizer->Add(paramsText, 1, wxALL, 5);
+  paramsText = new wxTextCtrl(panel, wxID_ANY, 
+      wxT(GDB_NO_PARAMS),
+      wxDefaultPosition, wxDefaultSize, textCtrlStyle);
+  sizer->Add(paramsText, 1, wxALL | wxEXPAND, 5);
+
+  // Set sizer to the panel
+  panel->SetSizer(sizer);
 
   // Status bar on the bottom
   CreateStatusBar();
@@ -305,15 +315,15 @@ void GDBFrame::DoStatusBarUpdate(wxCommandEvent & event) {
 }
 
 void GDBFrame::DoSourceCodeUpdate(wxCommandEvent & event) {
-  sourceCodeText->SetLabel(event.GetString());
+  sourceCodeText->SetValue(event.GetString());
 }
 
 void GDBFrame::DoLocalsUpdate(wxCommandEvent & event) {
-  localsText->SetLabel(event.GetString());
+  localsText->SetValue(event.GetString());
 }
 
 void GDBFrame::DoParamsUpdate(wxCommandEvent & event) {
-  paramsText->SetLabel(event.GetString());
+  paramsText->SetValue(event.GetString());
 }
 
 void update_console_and_gui(GDB & gdb) {

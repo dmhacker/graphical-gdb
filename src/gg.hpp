@@ -76,9 +76,9 @@ class GDBApp : public wxApp {
 
 // Class representing the GDB GUI top level display frame.
 class GDBFrame : public wxFrame {
-  wxStaticText * sourceCodeText; // Displays source code 
-  wxStaticText * localsText; // Displays local variables
-  wxStaticText * paramsText; // Displays formal parameters
+  wxTextCtrl * sourceCodeText; // Displays source code 
+  wxTextCtrl * localsText; // Displays local variables
+  wxTextCtrl * paramsText; // Displays formal parameters
   public:
     // Called by GDBApp::OnInit() when it is initializing the top level frame.
     GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & size);

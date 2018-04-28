@@ -157,13 +157,18 @@ std::string GDB::get_source_code() {
     // Get source code lines
     execute_and_read(GDB_SET_LIST_SIZE, GDB_DISPLAY_LIST_SIZE);
     std::string source = execute_and_read(GDB_LIST, saved_line_number); 
+
+    // Trick GDB's list range by printing the line before what we printed
+    // NOT A PERFECT SOLUTION: if original_line_number == 1, then the first
+    // line will never be printed by a subsequent list call
+    long original_line_number = std::max(
+        (long) 1, saved_line_number - list_size / 2 - 1);
+    execute_and_read(GDB_SET_LIST_SIZE, 1);
+    execute_and_read(GDB_LIST, original_line_number);
+
+    // Restore old list size
     execute_and_read(GDB_SET_LIST_SIZE, list_size);
-
-    // Set a temporary breakpoint at the same line we are at and jump back
-    // This resets the internal list flag and preserves where we are in terms of program execution
-    execute_and_read(GDB_TEMPORARY_BREAK, saved_line_number);
-    execute_and_read(GDB_JUMP, saved_line_number);
-
+    
     return source; 
   }
 

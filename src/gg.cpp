@@ -254,28 +254,38 @@ GDBFrame::GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & s
   wxFrame(NULL, wxID_ANY, title, pos, size) 
 {
   // File section in the menu bar
-  wxMenu * menuFile = new wxMenu;
+  wxMenu * menuFile = new wxMenu();
   menuFile->Append(wxID_EXIT);
 
   // Help section in the menu bar
-  wxMenu * menuHelp = new wxMenu;
+  wxMenu * menuHelp = new wxMenu();
   menuHelp->Append(wxID_ABOUT);
 
   // Menu bar on the top 
-  wxMenuBar * menuBar = new wxMenuBar;
+  wxMenuBar * menuBar = new wxMenuBar();
   menuBar->Append(menuFile, "&File");
   menuBar->Append(menuHelp, "&Help");
   SetMenuBar(menuBar);
 
-  // Create main panel and sizer
-  wxScrolledWindow * panel = new wxScrolledWindow(this, wxID_ANY);
+  // Add a source code display 
+  sourcePanel = new GDBSourcePanel(this);
+
+   // Status bar on the bottom
+  CreateStatusBar();
+  SetStatusText(GDB_STATUS_IDLE);
+}
+
+GDBSourcePanel::GDBSourcePanel(wxWindow * parent) :
+  wxPanel(parent, wxID_ANY) 
+{
+   // Create sizer
   wxBoxSizer * sizer = new wxBoxSizer(wxHORIZONTAL);
 
   // Style for future text boxes
   long textCtrlStyle = wxTE_MULTILINE | wxTE_READONLY | wxTE_RICH | wxHSCROLL | wxVSCROLL;
 
   // Create source code display and add to sizer
-  sourceCodeText = new wxTextCtrl(panel, wxID_ANY, 
+  sourceCodeText = new wxTextCtrl(this, wxID_ANY, 
       wxT(GDB_NO_SOURCE_CODE),
       wxDefaultPosition, wxDefaultSize, textCtrlStyle);
   sizer->Add(sourceCodeText, 1, wxALL | wxEXPAND, 5);
@@ -284,7 +294,7 @@ GDBFrame::GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & s
   sizer->AddSpacer(10);
 
   // Create local variables display and add to sizer
-  localsText = new wxTextCtrl(panel, wxID_ANY, 
+  localsText = new wxTextCtrl(this, wxID_ANY, 
       wxT(GDB_NO_LOCALS),
       wxDefaultPosition, wxDefaultSize, textCtrlStyle);
   sizer->Add(localsText, 1, wxALL | wxEXPAND, 5);
@@ -293,42 +303,13 @@ GDBFrame::GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & s
   sizer->AddSpacer(10);
 
   // Create formal parameters display and add to sizer
-  paramsText = new wxTextCtrl(panel, wxID_ANY, 
+  paramsText = new wxTextCtrl(this, wxID_ANY, 
       wxT(GDB_NO_PARAMS),
       wxDefaultPosition, wxDefaultSize, textCtrlStyle);
   sizer->Add(paramsText, 1, wxALL | wxEXPAND, 5);
 
-  // Set sizer to the panel
-  panel->SetSizer(sizer);
-
-  // Status bar on the bottom
-  CreateStatusBar();
-  SetStatusText(GDB_STATUS_IDLE);
-}
-
-void GDBFrame::OnAbout(wxCommandEvent & event) {
-  wxMessageBox("This is a wxWidget's Hello world sample",
-               "About Hello World", wxOK | wxICON_INFORMATION);
-}
-
-void GDBFrame::OnExit(wxCommandEvent & event) {
-  Close(true);
-}
-
-void GDBFrame::DoStatusBarUpdate(wxCommandEvent & event) {
-  SetStatusText(event.GetString());
-}
-
-void GDBFrame::DoSourceCodeUpdate(wxCommandEvent & event) {
-  sourceCodeText->SetValue(event.GetString());
-}
-
-void GDBFrame::DoLocalsUpdate(wxCommandEvent & event) {
-  localsText->SetValue(event.GetString());
-}
-
-void GDBFrame::DoParamsUpdate(wxCommandEvent & event) {
-  paramsText->SetValue(event.GetString());
+  // Finished with sizer; add to panel 
+  SetSizer(sizer);
 }
 
 void update_console_and_gui(GDB & gdb) {

@@ -9,7 +9,7 @@ const wxEventType gdbEVT_LOCALS_UPDATE = wxNewEventType();
 const wxEventType gdbEVT_PARAMS_UPDATE = wxNewEventType();
 const wxEventType gdbEVT_ASSEMBLY_CODE_UPDATE = wxNewEventType();
 
-// Class that represents a GDB process abstraction.
+// GDB process abstraction.
 class GDB {
     redi::pstream process; // The bidirectional stream opened to the process
     char buf[BUFSIZ]; // Temporary buffer used to read output and error 
@@ -73,43 +73,79 @@ class GDB {
     std::string execute_and_read(const char * command, long arg);
 };
 
-// Class representing the GDB GUI application.
+// GUI application.
 class GDBApp : public wxApp {
   public:
     // Called when our application is initialized via wxEntry().
     virtual bool OnInit();
 };
 
-// Class representing the GDB GUI top level display frame.
+// GUI display for source code, local variables, formal parameters.
+class GDBSourcePanel : public wxPanel {
+    wxTextCtrl * sourceCodeText; // Displays source code 
+    wxTextCtrl * localsText; // Displays local variables
+    wxTextCtrl * paramsText; // Displays formal parameters
+  public:
+    // Constructor for the source code panel.
+    GDBSourcePanel(wxWindow * parent);
+
+    // Sets the text of the source code display.
+    void SetSourceCode(wxString value) {
+      sourceCodeText->SetValue(value);
+    }
+
+    // Sets the text of the local variables display.
+    void SetLocalVariables(wxString value) {
+      localsText->SetValue(value);
+    }
+
+    // Sets the text of the formal parameters display.
+    void SetFormalParameters(wxString value) {
+      paramsText->SetValue(value);
+    }
+}; 
+
+// GUI top level display frame.
 class GDBFrame : public wxFrame {
-  wxTextCtrl * sourceCodeText; // Displays source code 
-  wxTextCtrl * localsText; // Displays local variables
-  wxTextCtrl * paramsText; // Displays formal parameters
+  GDBSourcePanel * sourcePanel;
   public:
     // Called by GDBApp::OnInit() when it is initializing the top level frame.
     GDBFrame(const wxString & title, const wxPoint & pos, const wxSize & size);
   private:
     // Called when the user clicks on the About button in the menu bar.
-    void OnAbout(wxCommandEvent & event);
+    void OnAbout(wxCommandEvent & event) {
+      wxMessageBox("This is a wxWidget's Hello world sample",
+                   "About Hello World", wxOK | wxICON_INFORMATION);
+    }
 
     // Called when the user quits the GUI.
-    void OnExit(wxCommandEvent & event);
+    void OnExit(wxCommandEvent & event) {
+      Close(true);
+    }
 
     // Called when then the console thread posts to the GUI thread that 
     // the status bar should be updated.
-    void DoStatusBarUpdate(wxCommandEvent & event);
+    void DoStatusBarUpdate(wxCommandEvent & event) {
+      SetStatusText(event.GetString());
+    }
     
     // Called when the console thread posts to the GUI thread that 
     // the source code display should be updated.
-    void DoSourceCodeUpdate(wxCommandEvent & event);
+    void DoSourceCodeUpdate(wxCommandEvent & event) {
+      sourcePanel->SetSourceCode(event.GetString());
+    }
 
     // Called when the console thread posts to the GUI thread that
     // the local variable display should be updated.
-    void DoLocalsUpdate(wxCommandEvent & event);
+    void DoLocalsUpdate(wxCommandEvent & event) {
+      sourcePanel->SetLocalVariables(event.GetString());
+    }
 
     // Called when the console thread posts to the GUI thread that
     // the formal parameter display should be updated.
-    void DoParamsUpdate(wxCommandEvent & event);
+    void DoParamsUpdate(wxCommandEvent & event) {
+      sourcePanel->SetFormalParameters(event.GetString());
+    }
 
     // Macro to specify that this frame has events that need binding
     wxDECLARE_EVENT_TABLE();

@@ -153,24 +153,16 @@ std::string GDB::get_source_code() {
   if (is_running_program()) {
     // Save the current list size and list line number
     long list_size = get_source_list_size();
-    long line_number = get_source_line_number();
 
     // Get source code lines
     execute_and_read(GDB_SET_LIST_SIZE, GDB_DISPLAY_LIST_SIZE);
-    std::string source = execute_and_read(GDB_LIST, line_number);
+    std::string source = execute_and_read(GDB_LIST, saved_line_number); 
+    execute_and_read(GDB_SET_LIST_SIZE, list_size);
 
     // Set a temporary breakpoint at the same line we are at and jump back
     // This resets the internal list flag and preserves where we are in terms of program execution
-    if (line_number != saved_line_number) {
-      execute_and_read(GDB_TEMPORARY_BREAK, line_number);
-      execute_and_read(GDB_JUMP, line_number);
-    }
-
-    // Reset line size to what the user had originally
-    execute_and_read(GDB_SET_LIST_SIZE, list_size);
-
-    // Save the line number we were last at
-    saved_line_number = line_number;
+    execute_and_read(GDB_TEMPORARY_BREAK, saved_line_number);
+    execute_and_read(GDB_JUMP, saved_line_number);
 
     return source; 
   }
@@ -224,6 +216,14 @@ long GDB::get_source_line_number() {
   std::string target_line = output.substr(output.find(':') + 1, output.size());
   std::string target_word = target_line.substr(0, target_line.find('\n'));
   return std::stol(target_word);
+}
+
+long GDB::get_saved_line_number() {
+  return saved_line_number;
+}
+
+void GDB::set_saved_line_number(long line_number) {
+  saved_line_number = line_number;
 }
 
 bool GDBApp::OnInit() {
@@ -338,37 +338,45 @@ void update_console_and_gui(GDB & gdb) {
     if (window) { // Window will be null if GDBApp::OnInit() hasn't been called
       wxEvtHandler * handler = window->GetEventHandler();
 
-      // Create event objects
-      wxCommandEvent * status_bar_update = 
-        new wxCommandEvent(gdbEVT_STATUS_BAR_UPDATE);
-      wxCommandEvent * source_code_update = 
-        new wxCommandEvent(gdbEVT_SOURCE_CODE_UPDATE);
-      wxCommandEvent * locals_update =
-        new wxCommandEvent(gdbEVT_LOCALS_UPDATE);
-      wxCommandEvent * params_update =
-        new wxCommandEvent(gdbEVT_PARAMS_UPDATE);
+      // Update displays if we detect line numbers have changed
+      long line_number = gdb.is_running_program() ?
+        gdb.get_source_line_number() : 0;
+      long saved_line_number = gdb.get_saved_line_number();
 
-      // Set contents of events
-      std::string status_bar_message;
-      std::string source_code_message;
-      if (gdb.is_running_program()) {
-        status_bar_update->SetString(GDB_STATUS_RUNNING);
-        source_code_update->SetString(gdb.get_source_code());
-        locals_update->SetString(gdb.get_local_variables());
-        params_update->SetString(gdb.get_formal_parameters());
-      }
-      else {
-        status_bar_update->SetString(GDB_STATUS_IDLE);
-        source_code_update->SetString(GDB_NO_SOURCE_CODE);
-        locals_update->SetString(GDB_NO_LOCALS);
-        params_update->SetString(GDB_NO_PARAMS);
-      }
+      // Set saved line number to be current line number
+      gdb.set_saved_line_number(line_number);
 
-      // Send events to GUI application
-      handler->QueueEvent(status_bar_update);
-      handler->QueueEvent(source_code_update); 
-      handler->QueueEvent(locals_update);
-      handler->QueueEvent(params_update);
+      if (line_number != saved_line_number) {
+        // Create event objects
+        wxCommandEvent * status_bar_update = 
+          new wxCommandEvent(gdbEVT_STATUS_BAR_UPDATE);
+        wxCommandEvent * source_code_update = 
+          new wxCommandEvent(gdbEVT_SOURCE_CODE_UPDATE);
+        wxCommandEvent * locals_update =
+          new wxCommandEvent(gdbEVT_LOCALS_UPDATE);
+        wxCommandEvent * params_update =
+          new wxCommandEvent(gdbEVT_PARAMS_UPDATE);
+
+        // Set contents of events
+        if (gdb.is_running_program()) {
+          status_bar_update->SetString(GDB_STATUS_RUNNING);
+          source_code_update->SetString(gdb.get_source_code());
+          locals_update->SetString(gdb.get_local_variables());
+          params_update->SetString(gdb.get_formal_parameters());
+        }
+        else {
+          status_bar_update->SetString(GDB_STATUS_IDLE);
+          source_code_update->SetString(GDB_NO_SOURCE_CODE);
+          locals_update->SetString(GDB_NO_LOCALS);
+          params_update->SetString(GDB_NO_PARAMS);
+        }
+
+        // Send events to GUI application
+        handler->QueueEvent(status_bar_update);
+        handler->QueueEvent(source_code_update); 
+        handler->QueueEvent(locals_update);
+        handler->QueueEvent(params_update);
+      }
     }
   }
 }

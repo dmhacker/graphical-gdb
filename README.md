@@ -25,8 +25,6 @@ The other option is to build gg directly from source. Note that doing so these p
   * libreadline-dev
   * libwxgtk3.0-dev
 
-The compiled executable should only be about 171 KB in total.
-
 ## Backstory
 
 gg was intended for users who are running gdb on a remote machine. Specifically, I designed it for UCSD's [CSE 30](https://cse.ucsd.edu/undergraduate/courses/course-descriptions/cse-30-computer-organization-and-systems-programming) class, where all programming assignments are done over SSH. As long as X11 forwarding is enabled for the connection, the GUI will display correctly on the host machine.

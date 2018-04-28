@@ -4,6 +4,7 @@
 
 #include <readline/readline.h>
 #include <readline/history.h> 
+#include <wx/notebook.h>
 #include "gg.hpp" 
 
 #define GG_ABOUT_TITLE "About GG"
@@ -285,12 +286,16 @@ GDBFrame::GDBFrame(const wxString & title,
   menuBar->Append(menuHelp, "&Help");
   SetMenuBar(menuBar);
 
-  // Add a source code display 
-  sourcePanel = new GDBSourcePanel(this);
-
-   // Status bar on the bottom
+  // Status bar on the bottom
   CreateStatusBar();
   SetStatusText(GDB_STATUS_IDLE);
+
+  // Create notebook (tabbed pane)
+  wxNotebook * tabs = new wxNotebook(this, wxID_ANY);
+
+  // Create source code display 
+  sourcePanel = new GDBSourcePanel(tabs);
+  tabs->AddPage(sourcePanel, "Source Code");
 }
 
 void GDBFrame::OnAbout(wxCommandEvent & event) {

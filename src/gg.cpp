@@ -161,8 +161,7 @@ bool GDB::is_running_program() {
 std::string GDB::get_source_code() {
   // Program is not running
   if (!is_running_program()) {
-    std::string empty;
-    return empty;
+    return std::string(GDB_NO_SOURCE_CODE);
   }
 
   // Save the current list size and list line number
@@ -189,8 +188,7 @@ std::string GDB::get_source_code() {
 std::string GDB::get_local_variables() {
   // Program is not running
   if (!is_running_program()) {
-    std::string empty;
-    return empty;
+    return std::string(GDB_NO_LOCALS);
   }
 
   return execute_and_read(GDB_INFO_LOCALS);
@@ -199,8 +197,7 @@ std::string GDB::get_local_variables() {
 std::string GDB::get_formal_parameters() {
   // Program is not running
   if (!is_running_program()) {
-    std::string empty;
-    return empty;
+    return std::string(GDB_NO_PARAMS);
   }
 
   return execute_and_read(GDB_INFO_ARGUMENTS);
@@ -209,8 +206,7 @@ std::string GDB::get_formal_parameters() {
 std::string GDB::get_assembly_code() {
   // Program is not running
   if (!is_running_program()) {
-    std::string empty;
-    return empty;
+    return std::string(GDB_NO_ASSEMBLY_CODE);
   }
 
   // Get full assembly dump
@@ -258,8 +254,7 @@ std::string GDB::get_assembly_code() {
 std::string GDB::get_registers() {
   // Program is not running
   if (!is_running_program()) {
-    std::string empty;
-    return empty;
+    return std::string(GDB_NO_REGISTERS);
   }
 
   return execute_and_read(GDB_INFO_REGISTERS);
@@ -451,18 +446,18 @@ void update_console_and_gui(GDB & gdb) {
 
       if (line_number != saved_line_number) {
         // Create event objects
-        wxCommandEvent * status_bar_update = 
-          new wxCommandEvent(gdbEVT_STATUS_BAR_UPDATE);
+        wxCommandEvent * status_bar_update =  
+          new wxCommandEvent(GDB_EVT_STATUS_BAR_UPDATE);
         wxCommandEvent * source_code_update = 
-          new wxCommandEvent(gdbEVT_SOURCE_CODE_UPDATE);
+          new wxCommandEvent(GDB_EVT_SOURCE_CODE_UPDATE);
         wxCommandEvent * locals_update =
-          new wxCommandEvent(gdbEVT_LOCALS_UPDATE);
+          new wxCommandEvent(GDB_EVT_LOCALS_UPDATE);
         wxCommandEvent * params_update =
-          new wxCommandEvent(gdbEVT_PARAMS_UPDATE);
+          new wxCommandEvent(GDB_EVT_PARAMS_UPDATE);
         wxCommandEvent * assembly_code_update =
-          new wxCommandEvent(gdbEVT_ASSEMBLY_CODE_UPDATE);
+          new wxCommandEvent(GDB_EVT_ASSEMBLY_CODE_UPDATE);
         wxCommandEvent * registers_update =
-          new wxCommandEvent(gdbEVT_REGISTERS_UPDATE);
+          new wxCommandEvent(GDB_EVT_REGISTERS_UPDATE);
 
         // Set contents of events
         if (gdb.is_running_program()) {

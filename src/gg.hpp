@@ -3,12 +3,12 @@
 #include "pstream.hpp"
 
 // Custom event types sent from the console to the GUI for updates.
-const wxEventType gdbEVT_STATUS_BAR_UPDATE = wxNewEventType();
-const wxEventType gdbEVT_SOURCE_CODE_UPDATE = wxNewEventType();
-const wxEventType gdbEVT_LOCALS_UPDATE = wxNewEventType();
-const wxEventType gdbEVT_PARAMS_UPDATE = wxNewEventType();
-const wxEventType gdbEVT_ASSEMBLY_CODE_UPDATE = wxNewEventType();
-const wxEventType gdbEVT_REGISTERS_UPDATE = wxNewEventType();
+const wxEventType GDB_EVT_STATUS_BAR_UPDATE = wxNewEventType();
+const wxEventType GDB_EVT_SOURCE_CODE_UPDATE = wxNewEventType();
+const wxEventType GDB_EVT_LOCALS_UPDATE = wxNewEventType();
+const wxEventType GDB_EVT_PARAMS_UPDATE = wxNewEventType();
+const wxEventType GDB_EVT_ASSEMBLY_CODE_UPDATE = wxNewEventType();
+const wxEventType GDB_EVT_REGISTERS_UPDATE = wxNewEventType();
 
 // GDB process abstraction.
 class GDB {
@@ -190,12 +190,12 @@ class GDBFrame : public wxFrame {
 wxBEGIN_EVENT_TABLE(GDBFrame, wxFrame)
   EVT_MENU(wxID_EXIT, GDBFrame::OnExit)
   EVT_MENU(wxID_ABOUT, GDBFrame::OnAbout)
-  EVT_COMMAND(wxID_ANY, gdbEVT_STATUS_BAR_UPDATE, GDBFrame::DoStatusBarUpdate)
-  EVT_COMMAND(wxID_ANY, gdbEVT_SOURCE_CODE_UPDATE, GDBFrame::DoSourceCodeUpdate)
-  EVT_COMMAND(wxID_ANY, gdbEVT_LOCALS_UPDATE, GDBFrame::DoLocalsUpdate)
-  EVT_COMMAND(wxID_ANY, gdbEVT_PARAMS_UPDATE, GDBFrame::DoParamsUpdate)
-  EVT_COMMAND(wxID_ANY, gdbEVT_ASSEMBLY_CODE_UPDATE, GDBFrame::DoAssemblyCodeUpdate)
-  EVT_COMMAND(wxID_ANY, gdbEVT_REGISTERS_UPDATE, GDBFrame::DoRegistersUpdate)
+  EVT_COMMAND(wxID_ANY, GDB_EVT_STATUS_BAR_UPDATE, GDBFrame::DoStatusBarUpdate)
+  EVT_COMMAND(wxID_ANY, GDB_EVT_SOURCE_CODE_UPDATE, GDBFrame::DoSourceCodeUpdate)
+  EVT_COMMAND(wxID_ANY, GDB_EVT_LOCALS_UPDATE, GDBFrame::DoLocalsUpdate)
+  EVT_COMMAND(wxID_ANY, GDB_EVT_PARAMS_UPDATE, GDBFrame::DoParamsUpdate)
+  EVT_COMMAND(wxID_ANY, GDB_EVT_ASSEMBLY_CODE_UPDATE, GDBFrame::DoAssemblyCodeUpdate)
+  EVT_COMMAND(wxID_ANY, GDB_EVT_REGISTERS_UPDATE, GDBFrame::DoRegistersUpdate)
 wxEND_EVENT_TABLE()
 
 // Macro to tell wxWidgets to use our GDB GUI application.

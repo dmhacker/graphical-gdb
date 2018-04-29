@@ -58,10 +58,14 @@ class GDB {
     long get_source_line_number();
 
     // Gets the last line number GDB was positioned at.
-    long get_saved_line_number();
+    long get_saved_line_number() {
+      return saved_line_number;
+    }
 
     // Sets the last line number GDB was at.
-    void set_saved_line_number(long line_number);
+    void set_saved_line_number(long line_number) {
+      saved_line_number = line_number;
+    }
   private:
     // Gives option to disable setting internal flags after an execution.
     void execute(const char * command, bool set_flags);

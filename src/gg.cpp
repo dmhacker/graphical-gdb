@@ -5,6 +5,7 @@
 #include <readline/readline.h>
 #include <readline/history.h> 
 #include <wx/notebook.h>
+
 #include "gg.hpp" 
 
 #define GG_ABOUT_TITLE "About GG"
@@ -14,7 +15,6 @@
 
 #define GDB_PROMPT "(gdb) " 
 #define GDB_QUIT "quit"
-#define GDB_JUMP "jump"
 #define GDB_WHERE "where"
 #define GDB_LIST "list" 
 #define GDB_GET_LIST_SIZE "show listsize"
@@ -23,7 +23,6 @@
 #define GDB_INFO_ARGUMENTS "info args"
 #define GDB_INFO_LOCALS "info locals"
 #define GDB_INFO_PROGRAM "info program"
-#define GDB_TEMPORARY_BREAK "tbreak"
 
 #define GDB_DISPLAY_LIST_SIZE 25
 
@@ -228,14 +227,6 @@ long GDB::get_source_line_number() {
   std::string target_line = output.substr(output.find(':') + 1, output.size());
   std::string target_word = target_line.substr(0, target_line.find('\n'));
   return std::stol(target_word);
-}
-
-long GDB::get_saved_line_number() {
-  return saved_line_number;
-}
-
-void GDB::set_saved_line_number(long line_number) {
-  saved_line_number = line_number;
 }
 
 bool GDBApp::OnInit() {

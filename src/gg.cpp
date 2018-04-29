@@ -5,6 +5,7 @@
 #include <readline/readline.h>
 #include <readline/history.h> 
 #include <wx/notebook.h>
+#include <wx/gbsizer.h>
 
 #include "gg.hpp" 
 
@@ -365,8 +366,8 @@ void GDBFrame::OnAbout(wxCommandEvent & event) {
 GDBSourcePanel::GDBSourcePanel(wxWindow * parent) :
   wxPanel(parent, wxID_ANY) 
 {
-   // Create main sizer
-  wxBoxSizer * sizer = new wxBoxSizer(wxHORIZONTAL);
+  // Create main sizer
+  wxGridBagSizer * sizer = new wxGridBagSizer(0, 0);
   SetSizer(sizer);
 
   // Style for future text boxes
@@ -376,25 +377,31 @@ GDBSourcePanel::GDBSourcePanel(wxWindow * parent) :
   sourceCodeText = new wxTextCtrl(this, wxID_ANY, 
       wxT(GDB_NO_SOURCE_CODE),
       wxDefaultPosition, wxDefaultSize, textCtrlStyle);
-  sizer->Add(sourceCodeText, 1, wxALL | wxEXPAND, 5);
-
-  // Add space
-  sizer->AddSpacer(10);
+  sizer->Add(sourceCodeText, 
+      wxGBPosition(0, 0), wxGBSpan(2, 1), 
+      wxALL | wxEXPAND, 5);
 
   // Create local variables display and add to sizer
   localsText = new wxTextCtrl(this, wxID_ANY, 
       wxT(GDB_NO_LOCALS),
       wxDefaultPosition, wxDefaultSize, textCtrlStyle);
-  sizer->Add(localsText, 1, wxALL | wxEXPAND, 5);
-
-  // Add space
-  sizer->AddSpacer(10);
+  sizer->Add(localsText, 
+      wxGBPosition(0, 1), wxGBSpan(1, 1), 
+      wxALL | wxEXPAND, 5);
 
   // Create formal parameters display and add to sizer
   paramsText = new wxTextCtrl(this, wxID_ANY, 
       wxT(GDB_NO_PARAMS),
       wxDefaultPosition, wxDefaultSize, textCtrlStyle);
-  sizer->Add(paramsText, 1, wxALL | wxEXPAND, 5);
+  sizer->Add(paramsText, 
+      wxGBPosition(1, 1), wxGBSpan(1, 1), 
+      wxALL | wxEXPAND, 5);
+
+  // Specify sizer rows and columns that should be growable
+  for (int i = 0; i < 2; i++) {
+    sizer->AddGrowableRow(i, 1);
+    sizer->AddGrowableCol(i, 1);
+  }
 }
 
 GDBAssemblyPanel::GDBAssemblyPanel(wxWindow * parent) :
@@ -414,7 +421,7 @@ GDBAssemblyPanel::GDBAssemblyPanel(wxWindow * parent) :
   sizer->Add(assemblyCodeText, 1, wxALL | wxEXPAND, 5);
 
   // Add space
-  sizer->AddSpacer(10);
+  // sizer->AddSpacer(10);
 
   // Create registers display and add to sizer
   registersText = new wxTextCtrl(this, wxID_ANY, 

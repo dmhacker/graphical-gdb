@@ -412,7 +412,7 @@ void update_console_and_gui(GDB & gdb) {
 }
 
 void open_console(int argc, char ** argv) {
-  // Convert raw C string to STL string 
+  // Convert raw C string to standard library string 
   std::vector<std::string> args;
   for (int i = 0; i < argc; i++) {
     char * arg = argv[i];
@@ -426,37 +426,39 @@ void open_console(int argc, char ** argv) {
   // Display gdb introduction to user 
   update_console_and_gui(gdb);
 
+  // Keep track of last command executed 
+  const char * last_command = nullptr; 
+
   while (gdb.is_alive()) {
     // Read one line from stdin to process (blocking)
-    char * buf_input = readline(GDB_PROMPT);
+    const char * command = readline(GDB_PROMPT);
 
-    // A null pointer signals input EOF 
-    if (!buf_input) {
-      // Print quit prompt since it isn't printed from input 
+    // A null pointer signals EOF and GDB should execute quit 
+    if (!command) {
       std::cout << GDB_QUIT << std::endl;
-
-      // Execute the quit command
-      gdb.execute(GDB_QUIT);
-
-      // Display the result of the quit command
-      update_console_and_gui(gdb);
-      break;
+      command = GDB_QUIT;
     }
 
-    // Handle empty input separately from regular command
-    if (strlen(buf_input)) {
-      // Add input to our CLI history
-      add_history(buf_input);
-
-      // Execute the command that we read in 
-      gdb.execute(buf_input);
-
-      // Display the result of the command and the next prompt
-      update_console_and_gui(gdb);
+    // Ignore empty command 
+    if (!strlen(command)) {
+      delete command;
+      continue;
     }
 
-    // Delete the input buffer, free up memory
-    delete buf_input;
+    // Execute the non-empty command 
+    gdb.execute(command);
+      
+    // Display the command's result
+    update_console_and_gui(gdb);
+
+    // Add the command to history if user executed something different previously
+    if (!last_command || *last_command != *command) {
+      add_history(command);
+    }
+
+    // The current command becomes last command executed 
+    delete last_command;
+    last_command = command;
   }
 }
 

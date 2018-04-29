@@ -28,12 +28,16 @@
 #define GDB_INFO_LOCALS "info locals"
 #define GDB_INFO_PROGRAM "info program"
 #define GDB_INFO_REGISTERS "info registers"
+#define GDB_PRINT "print"
+#define GDB_EXAMINE "x/"
+#define GDB_MEMORY_TYPE_LONG "x"
 
 #define GDB_STATUS_IDLE "GDB is idle."
 #define GDB_STATUS_RUNNING "GDB is currently running a program."
 #define GDB_NO_SOURCE_CODE "No source code information available."
 #define GDB_NO_LOCALS "No local variable information available."
 #define GDB_NO_PARAMS "No parameter information available."
+#define GDB_NO_VARIABLE "No variable information available."
 #define GDB_NO_ASSEMBLY_CODE "No assembly code information available."
 #define GDB_NO_REGISTERS "No register information available."
 
@@ -90,7 +94,27 @@ std::string GDB::execute_and_read(const char * command) {
 }
 
 std::string GDB::execute_and_read(const char * command, long arg) {
+  // e.g. line = "set listize 10"
   std::string line = std::string(command) + " " + std::to_string(arg);
+
+  return execute_and_read(line.c_str());
+}
+
+std::string GDB::execute_and_read(const char * command, const char * arg) {
+  // e.g. line = "print $sp"
+  std::string line = std::string(command) + " " + std::string(arg);
+
+  return execute_and_read(line.c_str());
+}
+
+std::string GDB::examine_and_read(const char * memory_location,
+    const char * memory_type, long num_addresses) 
+{
+  // e.g. line = "x/24x $sp"
+  std::string line = std::string(GDB_EXAMINE) + 
+    "/" + std::to_string(num_addresses) + std::string(memory_type) +
+    " " + memory_location;
+
   return execute_and_read(line.c_str());
 }
 
@@ -201,6 +225,32 @@ std::string GDB::get_formal_parameters() {
   }
 
   return execute_and_read(GDB_INFO_ARGUMENTS);
+}
+
+std::string GDB::get_variable_value(const char * variable) {
+  // Program is not running
+  if (!is_running_program()) {
+    return std::string(GDB_NO_VARIABLE);
+  }
+
+  // Get raw value of variable (e.g. $1 = ...)
+  std::string value = execute_and_read(GDB_PRINT, variable);
+
+  // Return original statement if variable isn't present
+  long split_index = value.find('=');
+  if (split_index == std::string::npos) {
+    return value;
+  }
+
+  // Trim first part of the statement to get actual value
+  return value.substr(split_index + 2, value.size());
+}
+
+std::vector<MemoryLocation> GDB::get_stack_frame() {
+  // Program is not running
+  if (!is_running_program()) {
+    return std::vector<MemoryLocation>();
+  }
 }
 
 std::string GDB::get_assembly_code() {
@@ -362,7 +412,7 @@ GDBSourcePanel::GDBSourcePanel(wxWindow * parent) :
   wxPanel(parent, wxID_ANY) 
 {
   // Create main sizer
-  wxGridBagSizer * sizer = new wxGridBagSizer(0, 0);
+  wxGridBagSizer * sizer = new wxGridBagSizer();
   SetSizer(sizer);
 
   // Style for future text boxes
@@ -414,9 +464,6 @@ GDBAssemblyPanel::GDBAssemblyPanel(wxWindow * parent) :
       wxT(GDB_NO_ASSEMBLY_CODE),
       wxDefaultPosition, wxDefaultSize, textCtrlStyle);
   sizer->Add(assemblyCodeText, 1, wxALL | wxEXPAND, 5);
-
-  // Add space
-  // sizer->AddSpacer(10);
 
   // Create registers display and add to sizer
   registersText = new wxTextCtrl(this, wxID_ANY, 

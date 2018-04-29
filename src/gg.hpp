@@ -10,6 +10,12 @@ const wxEventType GDB_EVT_PARAMS_UPDATE = wxNewEventType();
 const wxEventType GDB_EVT_ASSEMBLY_CODE_UPDATE = wxNewEventType();
 const wxEventType GDB_EVT_REGISTERS_UPDATE = wxNewEventType();
 
+// Represents a location in memory.
+struct MemoryLocation {
+  std::string address;
+  std::string value;
+};
+
 // GDB process abstraction.
 class GDB {
     redi::pstream process; // The bidirectional stream opened to the process
@@ -48,6 +54,12 @@ class GDB {
    
     // Gets the formal parameters (arguments) passed to the function GDB is executing.
     std::string get_formal_parameters();
+ 
+    // Gets the value of a variable.
+    std::string get_variable_value(const char * variable);
+
+    // Gets the value of the current stack frame.
+    std::vector<MemoryLocation> get_stack_frame();
     
     // Gets the assembly code for the function GDB is in.
     std::string get_assembly_code();
@@ -79,6 +91,13 @@ class GDB {
 
     // Special case of execute_and_read with an integer argument. 
     std::string execute_and_read(const char * command, long arg);
+
+    // Special case of execute_and_read with a string argument.
+    std::string execute_and_read(const char * command, const char * arg);
+
+    // Examines the memory at the given location.
+    std::string examine_and_read(const char * memory_location, 
+        const char * memory_type, long num_addresses);
 };
 
 // GUI application.

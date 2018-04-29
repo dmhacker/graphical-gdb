@@ -8,6 +8,7 @@ const wxEventType gdbEVT_SOURCE_CODE_UPDATE = wxNewEventType();
 const wxEventType gdbEVT_LOCALS_UPDATE = wxNewEventType();
 const wxEventType gdbEVT_PARAMS_UPDATE = wxNewEventType();
 const wxEventType gdbEVT_ASSEMBLY_CODE_UPDATE = wxNewEventType();
+const wxEventType gdbEVT_REGISTERS_UPDATE = wxNewEventType();
 
 // GDB process abstraction.
 class GDB {
@@ -51,6 +52,9 @@ class GDB {
     // Gets the assembly code for the function GDB is in.
     std::string get_assembly_code();
 
+    // Gets the register values wherever GDB is stopped at.
+    std::string get_registers();
+
     // Gets GDB's current source code list size.
     long get_source_list_size();
     
@@ -90,7 +94,7 @@ class GDBSourcePanel : public wxPanel {
     wxTextCtrl * localsText; // Displays local variables
     wxTextCtrl * paramsText; // Displays formal parameters
   public:
-    // Constructor for the source code panel.
+    // Constructor for the panel.
     GDBSourcePanel(wxWindow * parent);
 
     // Sets the text of the source code display.
@@ -109,11 +113,31 @@ class GDBSourcePanel : public wxPanel {
     }
 }; 
 
+// GUI display for assembly code, registers, stack frame.
+class GDBAssemblyPanel : public wxPanel {
+    wxTextCtrl * assemblyCodeText; // Displays assembly code
+    wxTextCtrl * registersText; // Displays register values
+  public:
+    // Constructor for the panel.
+    GDBAssemblyPanel(wxWindow * parent);
+
+    // Sets the text of the assembly code display.
+    void SetAssemblyCode(wxString value) {
+      assemblyCodeText->SetValue(value);
+    }
+
+    // Sets the text of the registers display.
+    void SetRegisters(wxString value) {
+      registersText->SetValue(value);
+    }
+};
+
 // GUI top level display frame.
 class GDBFrame : public wxFrame {
   wxString command;
   wxString args;
   GDBSourcePanel * sourcePanel;
+  GDBAssemblyPanel * assemblyPanel;
   public:
     // Called by GDBApp::OnInit() when it is initializing the top level frame.
     GDBFrame(const wxString & title, 
@@ -128,28 +152,34 @@ class GDBFrame : public wxFrame {
       Close(true);
     }
 
-    // Called when then the console thread posts to the GUI thread that 
-    // the status bar should be updated.
+    // Status bar should be updated.
     void DoStatusBarUpdate(wxCommandEvent & event) {
       SetStatusText(event.GetString());
     }
     
-    // Called when the console thread posts to the GUI thread that 
-    // the source code display should be updated.
+    // Source code display should be updated.
     void DoSourceCodeUpdate(wxCommandEvent & event) {
       sourcePanel->SetSourceCode(event.GetString());
     }
 
-    // Called when the console thread posts to the GUI thread that
-    // the local variable display should be updated.
+    // Local variable display should be updated.
     void DoLocalsUpdate(wxCommandEvent & event) {
       sourcePanel->SetLocalVariables(event.GetString());
     }
 
-    // Called when the console thread posts to the GUI thread that
-    // the formal parameter display should be updated.
+    // Formal parameter display should be updated.
     void DoParamsUpdate(wxCommandEvent & event) {
       sourcePanel->SetFormalParameters(event.GetString());
+    }
+
+    // Assembly code display should be updated.
+    void DoAssemblyCodeUpdate(wxCommandEvent & event) {
+      assemblyPanel->SetAssemblyCode(event.GetString());
+    }
+
+    // Registers display should be updated.
+    void DoRegistersUpdate(wxCommandEvent & event) {
+      assemblyPanel->SetRegisters(event.GetString());
     }
 
     // Macro to specify that this frame has events that need binding
@@ -164,6 +194,8 @@ wxBEGIN_EVENT_TABLE(GDBFrame, wxFrame)
   EVT_COMMAND(wxID_ANY, gdbEVT_SOURCE_CODE_UPDATE, GDBFrame::DoSourceCodeUpdate)
   EVT_COMMAND(wxID_ANY, gdbEVT_LOCALS_UPDATE, GDBFrame::DoLocalsUpdate)
   EVT_COMMAND(wxID_ANY, gdbEVT_PARAMS_UPDATE, GDBFrame::DoParamsUpdate)
+  EVT_COMMAND(wxID_ANY, gdbEVT_ASSEMBLY_CODE_UPDATE, GDBFrame::DoAssemblyCodeUpdate)
+  EVT_COMMAND(wxID_ANY, gdbEVT_REGISTERS_UPDATE, GDBFrame::DoRegistersUpdate)
 wxEND_EVENT_TABLE()
 
 // Macro to tell wxWidgets to use our GDB GUI application.

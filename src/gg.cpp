@@ -23,8 +23,9 @@
 #define GDB_INFO_ARGUMENTS "info args"
 #define GDB_INFO_LOCALS "info locals"
 #define GDB_INFO_PROGRAM "info program"
+#define GDB_INFO_REGISTERS "info registers"
 
-#define GDB_DISPLAY_LIST_SIZE 25
+#define GDB_DISPLAY_LIST_SIZE 19
 
 #define GDB_FRAME_TITLE "GDB Display"
 #define GDB_STATUS_IDLE "GDB is idle."
@@ -32,6 +33,8 @@
 #define GDB_NO_SOURCE_CODE "No source code information available."
 #define GDB_NO_LOCALS "No local variable information available."
 #define GDB_NO_PARAMS "No parameter information available."
+#define GDB_NO_ASSEMBLY_CODE "No assembly code information available."
+#define GDB_NO_REGISTERS "No register information available."
 
 // Helper function for determining if a string ends with a certain value.
 bool string_ends_with(std::string const & str, std::string const & ending) {
@@ -216,6 +219,17 @@ std::string GDB::get_assembly_code() {
   return empty;
 }
 
+std::string GDB::get_registers() {
+  // A running program has active registers
+  if (is_running_program()) {
+    return execute_and_read(GDB_INFO_REGISTERS);
+  }
+
+  // Not relevant for programs that aren't running
+  std::string empty;
+  return empty;
+}
+
 long GDB::get_source_list_size() {
   std::string output = execute_and_read(GDB_GET_LIST_SIZE);
   std::string last_word = output.substr(output.find_last_of(' '), output.size() - 1);
@@ -287,6 +301,10 @@ GDBFrame::GDBFrame(const wxString & title,
   // Create source code display 
   sourcePanel = new GDBSourcePanel(tabs);
   tabs->AddPage(sourcePanel, "Source Code");
+
+  // Create assembly code display
+  assemblyPanel = new GDBAssemblyPanel(tabs);
+  tabs->AddPage(assemblyPanel, "Assembly Code");
 }
 
 void GDBFrame::OnAbout(wxCommandEvent & event) {
@@ -315,6 +333,7 @@ GDBSourcePanel::GDBSourcePanel(wxWindow * parent) :
 {
    // Create sizer
   wxBoxSizer * sizer = new wxBoxSizer(wxHORIZONTAL);
+  SetSizer(sizer);
 
   // Style for future text boxes
   long textCtrlStyle = wxTE_MULTILINE | wxTE_READONLY | wxTE_RICH | wxHSCROLL | wxVSCROLL;
@@ -342,9 +361,32 @@ GDBSourcePanel::GDBSourcePanel(wxWindow * parent) :
       wxT(GDB_NO_PARAMS),
       wxDefaultPosition, wxDefaultSize, textCtrlStyle);
   sizer->Add(paramsText, 1, wxALL | wxEXPAND, 5);
+}
 
-  // Finished with sizer; add to panel 
+GDBAssemblyPanel::GDBAssemblyPanel(wxWindow * parent) :
+  wxPanel(parent, wxID_ANY) 
+{
+   // Create sizer
+  wxBoxSizer * sizer = new wxBoxSizer(wxHORIZONTAL);
   SetSizer(sizer);
+
+  // Style for future text boxes
+  long textCtrlStyle = wxTE_MULTILINE | wxTE_READONLY | wxTE_RICH | wxHSCROLL | wxVSCROLL;
+
+  // Create assembly code display and add to sizer
+  assemblyCodeText = new wxTextCtrl(this, wxID_ANY, 
+      wxT(GDB_NO_ASSEMBLY_CODE),
+      wxDefaultPosition, wxDefaultSize, textCtrlStyle);
+  sizer->Add(assemblyCodeText, 1, wxALL | wxEXPAND, 5);
+
+  // Add space
+  sizer->AddSpacer(10);
+
+  // Create registers display and add to sizer
+  registersText = new wxTextCtrl(this, wxID_ANY, 
+      wxT(GDB_NO_REGISTERS),
+      wxDefaultPosition, wxDefaultSize, textCtrlStyle);
+  sizer->Add(registersText, 1, wxALL | wxEXPAND, 5);
 }
 
 void update_console_and_gui(GDB & gdb) {
@@ -377,6 +419,10 @@ void update_console_and_gui(GDB & gdb) {
           new wxCommandEvent(gdbEVT_LOCALS_UPDATE);
         wxCommandEvent * params_update =
           new wxCommandEvent(gdbEVT_PARAMS_UPDATE);
+        wxCommandEvent * assembly_code_update =
+          new wxCommandEvent(gdbEVT_ASSEMBLY_CODE_UPDATE);
+        wxCommandEvent * registers_update =
+          new wxCommandEvent(gdbEVT_REGISTERS_UPDATE);
 
         // Set contents of events
         if (gdb.is_running_program()) {
@@ -384,12 +430,16 @@ void update_console_and_gui(GDB & gdb) {
           source_code_update->SetString(gdb.get_source_code());
           locals_update->SetString(gdb.get_local_variables());
           params_update->SetString(gdb.get_formal_parameters());
+          assembly_code_update->SetString(gdb.get_assembly_code());
+          registers_update->SetString(gdb.get_registers());
         }
         else {
           status_bar_update->SetString(GDB_STATUS_IDLE);
           source_code_update->SetString(GDB_NO_SOURCE_CODE);
           locals_update->SetString(GDB_NO_LOCALS);
           params_update->SetString(GDB_NO_PARAMS);
+          assembly_code_update->SetString(GDB_NO_ASSEMBLY_CODE);
+          registers_update->SetString(GDB_NO_REGISTERS);
         }
 
         // Send events to GUI application
@@ -397,6 +447,8 @@ void update_console_and_gui(GDB & gdb) {
         handler->QueueEvent(source_code_update); 
         handler->QueueEvent(locals_update);
         handler->QueueEvent(params_update);
+        handler->QueueEvent(assembly_code_update);
+        handler->QueueEvent(registers_update);
       }
     }
   }

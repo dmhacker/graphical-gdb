@@ -300,11 +300,11 @@ GDBFrame::GDBFrame(const wxString & title,
 
   // Create source code display 
   sourcePanel = new GDBSourcePanel(tabs);
-  tabs->AddPage(sourcePanel, "Source Code");
+  tabs->AddPage(sourcePanel, "Source");
 
   // Create assembly code display
   assemblyPanel = new GDBAssemblyPanel(tabs);
-  tabs->AddPage(assemblyPanel, "Assembly Code");
+  tabs->AddPage(assemblyPanel, "Assembly");
 }
 
 void GDBFrame::OnAbout(wxCommandEvent & event) {

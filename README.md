@@ -20,7 +20,7 @@ Any arguments that you pass to gg on startup will be passed to gdb.
 sudo apt-get install gg
 ```
 
-The other option is to build gg directly from source. Note that doing so these packages are requirements for the build process:
+The other option is to clone this repository and build directly from source. Note that these packages are requirements for the build process:
   * build-essential
   * libreadline-dev
   * libwxgtk3.0-dev

@@ -8,10 +8,13 @@
 
 #include "gg.hpp" 
 
+#define GG_FRAME_TITLE "GDB Display"
 #define GG_ABOUT_TITLE "About GG"
 #define GG_VERSION "0.0.1"
 #define GG_AUTHORS "David Hacker"
 #define GG_LICENSE "GNU GPL v3.0"
+
+#define GG_FRAME_LINES 19
 
 #define GDB_PROMPT "(gdb) " 
 #define GDB_QUIT "quit"
@@ -25,9 +28,6 @@
 #define GDB_INFO_PROGRAM "info program"
 #define GDB_INFO_REGISTERS "info registers"
 
-#define GDB_DISPLAY_LIST_SIZE 19
-
-#define GDB_FRAME_TITLE "GDB Display"
 #define GDB_STATUS_IDLE "GDB is idle."
 #define GDB_STATUS_RUNNING "GDB is currently running a program."
 #define GDB_NO_SOURCE_CODE "No source code information available."
@@ -158,76 +158,110 @@ bool GDB::is_running_program() {
 }
 
 std::string GDB::get_source_code() {
-  // A running program has source code that can be printed
-  if (is_running_program()) {
-    // Save the current list size and list line number
-    long list_size = get_source_list_size();
-
-    // Get source code lines
-    execute_and_read(GDB_SET_LIST_SIZE, GDB_DISPLAY_LIST_SIZE);
-    std::string source = execute_and_read(GDB_LIST, saved_line_number); 
-
-    // Trick GDB's list range by printing the line before what we printed
-    // NOT A PERFECT SOLUTION: if original_line_number == 1, then the first
-    // line will never be printed by a subsequent list call
-    long original_line_number = std::max(
-        (long) 1, saved_line_number - list_size / 2 - 1);
-    execute_and_read(GDB_SET_LIST_SIZE, 1);
-    execute_and_read(GDB_LIST, original_line_number);
-
-    // Restore old list size
-    execute_and_read(GDB_SET_LIST_SIZE, list_size);
-    
-    return source; 
+  // Program is not running
+  if (!is_running_program()) {
+    std::string empty;
+    return empty;
   }
 
-  // Not relevant for programs that aren't running
-  std::string empty;
-  return empty;
+  // Save the current list size and list line number
+  long list_size = get_source_list_size();
+
+  // Get source code lines
+  execute_and_read(GDB_SET_LIST_SIZE, GG_FRAME_LINES);
+  std::string source = execute_and_read(GDB_LIST, saved_line_number); 
+
+  // Trick GDB's list range by printing the line before what we printed
+  // NOT A PERFECT SOLUTION: if original_line_number == 1, then the first
+  // line will never be printed by a subsequent list call
+  long original_line_number = std::max(
+      (long) 1, saved_line_number - list_size / 2 - 1);
+  execute_and_read(GDB_SET_LIST_SIZE, 1);
+  execute_and_read(GDB_LIST, original_line_number);
+
+  // Restore old list size
+  execute_and_read(GDB_SET_LIST_SIZE, list_size);
+
+  return source; 
 }
 
 std::string GDB::get_local_variables() {
-  // A running program has local variables
-  if (is_running_program()) {
-    return execute_and_read(GDB_INFO_LOCALS);
+  // Program is not running
+  if (!is_running_program()) {
+    std::string empty;
+    return empty;
   }
-  
-  // Not relevant for programs that aren't running
-  std::string empty;
-  return empty;
+
+  return execute_and_read(GDB_INFO_LOCALS);
 }
 
 std::string GDB::get_formal_parameters() {
-  // A running program has formal parameters 
-  if (is_running_program()) {
-    return execute_and_read(GDB_INFO_ARGUMENTS);
+  // Program is not running
+  if (!is_running_program()) {
+    std::string empty;
+    return empty;
   }
-  
-  // Not relevant for programs that aren't running
-  std::string empty;
-  return empty;
+
+  return execute_and_read(GDB_INFO_ARGUMENTS);
 }
 
 std::string GDB::get_assembly_code() {
-  // A running program has assembly that can be disassembled
-  if (is_running_program()) {
-    return execute_and_read(GDB_DISASSEMBLE);
+  // Program is not running
+  if (!is_running_program()) {
+    std::string empty;
+    return empty;
   }
-  
-  // Not relevant for programs that aren't running
-  std::string empty;
-  return empty;
+
+  // Get full assembly dump
+  std::string assembly_dump = execute_and_read(GDB_DISASSEMBLE);
+  std::stringstream assembly_stream(assembly_dump);
+
+  // Vector holding split lines 
+  std::vector<std::string> assembly_lines; 
+  // Buffer used to hold a line 
+  std::string buffer; 
+  // Index of the line we are looking at
+  int current_line = 0; 
+  // Index of the line GDB is executing
+  int executing_line = 0; 
+
+  // Break assembly dump into separate lines and determine executing line
+  while (std::getline(assembly_stream, buffer, '\n')) {
+    assembly_lines.push_back(buffer);
+
+    // Executing assembly line contains a specific substring 
+    if (string_contains(buffer, "=>")) {
+      executing_line = current_line;
+    }
+
+    current_line++;
+  }
+
+  // Concise assembly string that we want to return
+  std::string assembly;
+  // Relevant starting line in the assembly dump 
+  int starting_line = std::max(1, executing_line - GG_FRAME_LINES / 2);
+  // Relevant ending line in the assembly dump
+  int ending_line = starting_line + GG_FRAME_LINES;
+
+  // Iterate through all relevant lines and append each to output 
+  for (int i = starting_line; i < ending_line; i++) {
+    if (i < assembly_lines.size()) {
+      assembly.append(assembly_lines[i]).append("\n");
+    }
+  }
+
+  return assembly;
 }
 
 std::string GDB::get_registers() {
-  // A running program has active registers
-  if (is_running_program()) {
-    return execute_and_read(GDB_INFO_REGISTERS);
+  // Program is not running
+  if (!is_running_program()) {
+    std::string empty;
+    return empty;
   }
 
-  // Not relevant for programs that aren't running
-  std::string empty;
-  return empty;
+  return execute_and_read(GDB_INFO_REGISTERS);
 }
 
 long GDB::get_source_list_size() {
@@ -260,7 +294,7 @@ bool GDBApp::OnInit() {
   }
 
   // Create main frame and display 
-  GDBFrame * frame = new GDBFrame(GDB_FRAME_TITLE, wxApp::argv[0], args, 
+  GDBFrame * frame = new GDBFrame(GG_FRAME_TITLE, wxApp::argv[0], args, 
       wxPoint((screen_x - frame_x) / 2, (screen_y - frame_y) / 2), 
       wxSize(frame_x, frame_y));
   frame->Show(true);
@@ -331,7 +365,7 @@ void GDBFrame::OnAbout(wxCommandEvent & event) {
 GDBSourcePanel::GDBSourcePanel(wxWindow * parent) :
   wxPanel(parent, wxID_ANY) 
 {
-   // Create sizer
+   // Create main sizer
   wxBoxSizer * sizer = new wxBoxSizer(wxHORIZONTAL);
   SetSizer(sizer);
 
@@ -490,12 +524,12 @@ void open_console(int argc, char ** argv) {
 
     // Execute the non-empty command 
     gdb.execute(command);
-      
+
     // Display the command's result
     update_console_and_gui(gdb);
 
     // Add the command to history if user executed something different previously
-    if (!last_command || *last_command != *command) {
+    if (!last_command || strcmp(command, last_command)) {
       add_history(command);
     }
 
@@ -519,4 +553,3 @@ int main(int argc, char ** argv) {
 
   return 0;
 }
-

@@ -29,8 +29,10 @@
 #define GDB_INFO_PROGRAM "info program"
 #define GDB_INFO_REGISTERS "info registers"
 #define GDB_PRINT "print"
-#define GDB_EXAMINE "x/"
+#define GDB_EXAMINE "x"
+
 #define GDB_MEMORY_TYPE_LONG "x"
+#define GDB_MEMORY_TYPE_INSTRUCTION "i"
 
 #define GDB_STATUS_IDLE "GDB is idle."
 #define GDB_STATUS_RUNNING "GDB is currently running a program."

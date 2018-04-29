@@ -430,8 +430,7 @@ void update_console_and_gui(GDB & gdb) {
   // Queue events if gdb is alive and 
   // application has been initialized on separate thread
   if (gdb.is_alive() && wxTheApp) { // App will be null if wxEntry() hasn't been called
-    GDBApp * app = (GDBApp *) wxTheApp;
-    wxWindow * window = app->GetTopWindow();
+    wxWindow * window = wxTheApp->GetTopWindow();
     if (window) { // Window will be null if GDBApp::OnInit() hasn't been called
       wxEvtHandler * handler = window->GetEventHandler();
 

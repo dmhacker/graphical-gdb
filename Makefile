@@ -1,7 +1,7 @@
 CXX=g++
 CXXFLAGS=-std=c++11
 
-ifeq ($(ldflags), -static) 
+ifeq ($(static), yes) 
 	WXLIBS=`wx-config --cxxflags --libs -static` 
 else
 	WXLIBS=`wx-config --cxxflags --libs`

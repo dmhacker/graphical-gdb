@@ -6,7 +6,10 @@
 #include <wx/gbsizer.h>
 
 #include "gg.hpp" 
-#include "linenoise.h"
+
+#include "../include/linenoise.h"
+
+#define CURSOR_LINE_UP "\e[A" 
 
 #define GG_FRAME_TITLE "GDB Display"
 #define GG_ABOUT_TITLE "About GG"
@@ -556,44 +559,62 @@ void open_console(int argc, char ** argv) {
   // Keep track of last command executed 
   const char * last_command = nullptr; 
 
-  // We should be able to store a large number of commands in history
+  // Keep track of how many unique commands have been executed
   int history_length = 0;
 
-  while (gdb.is_alive()) {
-    // Adjust our history max length
-    linenoiseHistorySetMaxLen(history_length + 1);
+  // Set deletion flags
+  bool last_command_deletion = true;
+  bool final_command_deletion = true;
 
+  while (gdb.is_alive()) {
     // Read one line from stdin to process (blocking)
     const char * command = linenoise(GDB_PROMPT);
+    last_command_deletion = true;
 
     // A null pointer signals EOF and GDB should execute quit 
     if (!command) {
-      std::cout << GDB_QUIT << std::endl;
-      command = GDB_QUIT;
+      // Linenoise does a weird thing where it prints a newline after Ctrl-D
+      // The solution is to jump up to previous line and rewrite it
+      std::cout << CURSOR_LINE_UP << GDB_PROMPT << GDB_QUIT << std::endl;
+
+      // Specify that the quit command should be executed
+      command = GDB_QUIT; 
+
+      // Do not delete the "quit" literal
+      final_command_deletion = false;
     }
 
     // GDB handles empty commands by executing the previous command  
     if (!strlen(command)) {
-      char buffer[BUFSIZ];
-      strncpy(buffer, last_command ? last_command : "", sizeof(buffer));
-      command = buffer;
+      if (!last_command) {
+          continue;
+      }
+      else {
+        command = last_command;
+        last_command_deletion = false;
+      }
     }
 
-    // Execute the command 
+    // Execute the command and display result
     gdb.execute(command);
-
-    // Display the command's result
     update_console_and_gui(gdb);
 
     // Add the command to history if user executed something different previously
     if (!last_command || strcmp(command, last_command)) {
+      linenoiseHistorySetMaxLen(++history_length);
       linenoiseHistoryAdd(command);
-      history_length++;
     }
 
     // The current command becomes last command executed 
+    if (last_command_deletion) {
+      delete last_command;
+      last_command = command;
+    }
+  }
+
+  // Do final deletion - cleanup
+  if (final_command_deletion) {
     delete last_command;
-    last_command = command;
   }
 }
 

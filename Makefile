@@ -6,8 +6,7 @@ LDLIBS=`wx-config --cxxflags --libs`
 
 all: build/gg build/simpletest
 build/gg: src/gg.cpp src/gg.hpp
-	$(CXX) $(CXXFLAGS) -o $@ $(LDLIBS) \
-		src/linenoise.cpp src/ConvertUTF.cpp src/wcwidth.cpp $<
+	$(CXX) $(CXXFLAGS) -o $@ $(LDLIBS) -g include/* $<
 build/simpletest: tests/simpletest.cpp
 	$(CXX) $(CXXFLAGS) -o $@ -g $<
 clean:

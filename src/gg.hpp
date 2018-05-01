@@ -1,6 +1,6 @@
 #include <wx/wx.h>
 
-#include "pstream.hpp"
+#include "../include/pstream.hpp"
 
 // Custom event types sent from the console to the GUI for updates.
 const wxEventType GDB_EVT_STATUS_BAR_UPDATE = wxNewEventType();

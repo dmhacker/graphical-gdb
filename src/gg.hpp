@@ -2,6 +2,43 @@
 
 #include "../include/pstream.hpp"
 
+#define CURSOR_LINE_UP "\e[A" 
+
+#define GG_FRAME_TITLE "GDB Display"
+#define GG_ABOUT_TITLE "About GG"
+#define GG_VERSION "0.0.1"
+#define GG_AUTHORS "David Hacker"
+#define GG_LICENSE "GNU GPL v3.0"
+
+#define GG_FRAME_LINES 19
+#define GG_HISTORY_MAX_LENGTH 1000
+
+#define GDB_PROMPT "(gdb) " 
+#define GDB_QUIT "quit"
+#define GDB_WHERE "where"
+#define GDB_LIST "list" 
+#define GDB_GET_LIST_SIZE "show listsize"
+#define GDB_SET_LIST_SIZE "set listsize"
+#define GDB_DISASSEMBLE "disassemble"
+#define GDB_INFO_ARGUMENTS "info args"
+#define GDB_INFO_LOCALS "info locals"
+#define GDB_INFO_PROGRAM "info program"
+#define GDB_INFO_REGISTERS "info registers"
+#define GDB_PRINT "print"
+#define GDB_EXAMINE "x"
+
+#define GDB_MEMORY_TYPE_LONG "x"
+#define GDB_MEMORY_TYPE_INSTRUCTION "i"
+
+#define GDB_STATUS_IDLE "GDB is idle."
+#define GDB_STATUS_RUNNING "GDB is currently running a program."
+#define GDB_NO_SOURCE_CODE "No source code information available."
+#define GDB_NO_LOCALS "No local variable information available."
+#define GDB_NO_PARAMS "No parameter information available."
+#define GDB_NO_VARIABLE "No variable information available."
+#define GDB_NO_ASSEMBLY_CODE "No assembly code information available."
+#define GDB_NO_REGISTERS "No register information available."
+
 // Custom event types sent from the console to the GUI for updates.
 const wxEventType GDB_EVT_STATUS_BAR_UPDATE = wxNewEventType();
 const wxEventType GDB_EVT_SOURCE_CODE_UPDATE = wxNewEventType();

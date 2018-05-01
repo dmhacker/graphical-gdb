@@ -22,7 +22,6 @@ sudo apt-get install gg
 
 The other option is to clone this repository and build directly from source. Note that these packages are requirements for the build process:
   * build-essential
-  * libreadline-dev
   * libwxgtk3.0-dev
 
 ## Backstory

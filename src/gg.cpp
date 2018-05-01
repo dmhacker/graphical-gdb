@@ -2,12 +2,11 @@
 #include <iostream>
 #include <sstream>
 
-#include <readline/readline.h>
-#include <readline/history.h> 
 #include <wx/notebook.h>
 #include <wx/gbsizer.h>
 
 #include "gg.hpp" 
+#include "linenoise.h"
 
 #define GG_FRAME_TITLE "GDB Display"
 #define GG_ABOUT_TITLE "About GG"
@@ -16,6 +15,7 @@
 #define GG_LICENSE "GNU GPL v3.0"
 
 #define GG_FRAME_LINES 19
+#define GG_HISTORY_LENGTH 1000
 
 #define GDB_PROMPT "(gdb) " 
 #define GDB_QUIT "quit"
@@ -554,9 +554,15 @@ void open_console(int argc, char ** argv) {
   // Keep track of last command executed 
   const char * last_command = nullptr; 
 
+  // We should be able to store a large number of commands in history
+  int history_length = 0;
+
   while (gdb.is_alive()) {
+    // Adjust our history max length
+    linenoiseHistorySetMaxLen(history_length + 1);
+
     // Read one line from stdin to process (blocking)
-    const char * command = readline(GDB_PROMPT);
+    const char * command = linenoise(GDB_PROMPT);
 
     // A null pointer signals EOF and GDB should execute quit 
     if (!command) {
@@ -564,13 +570,14 @@ void open_console(int argc, char ** argv) {
       command = GDB_QUIT;
     }
 
-    // Ignore empty command 
+    // GDB handles empty commands by executing the previous command  
     if (!strlen(command)) {
-      delete command;
-      continue;
+      char buffer[BUFSIZ];
+      strncpy(buffer, last_command ? last_command : "", sizeof(buffer));
+      command = buffer;
     }
 
-    // Execute the non-empty command 
+    // Execute the command 
     gdb.execute(command);
 
     // Display the command's result
@@ -578,7 +585,8 @@ void open_console(int argc, char ** argv) {
 
     // Add the command to history if user executed something different previously
     if (!last_command || strcmp(command, last_command)) {
-      add_history(command);
+      linenoiseHistoryAdd(command);
+      history_length++;
     }
 
     // The current command becomes last command executed 

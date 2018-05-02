@@ -1,13 +1,14 @@
 CXX=g++
-CXXFLAGS=-std=c++11
-WXLIBS=`wx-config --cxxflags --libs --static` 
+CXXFLAGS=-std=c++11 `wx-config --cxxflags`
+WXLIBS=`wx-config --libs`
 
 .PHONY: clean
 
 all: build/gg build/simpletest
 build/gg: src/gg.cpp src/gg.hpp
-	$(CXX) $(CXXFLAGS) -o $@ include/* $< $(WXLIBS)
+	$(CXX) $(CXXFLAGS) include/* $< $(WXLIBS) -o $@
 build/simpletest: tests/simpletest.cpp
-	$(CXX) $(CXXFLAGS) -o $@ -g $<
+	$(CXX) $(CXXFLAGS) $< -o $@ -g
 clean:
 	rm -rf build/
+

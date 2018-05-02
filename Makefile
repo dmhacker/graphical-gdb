@@ -1,17 +1,12 @@
 CXX=g++
 CXXFLAGS=-std=c++11
-
-ifeq ($(static), yes) 
-	WXLIBS=`wx-config --cxxflags --libs -static` 
-else
-	WXLIBS=`wx-config --cxxflags --libs`
-endif
+WXLIBS=`wx-config --cxxflags --libs --static` 
 
 .PHONY: clean
 
 all: build/gg build/simpletest
 build/gg: src/gg.cpp src/gg.hpp
-	$(CXX) $(CXXFLAGS) -o $@ $(WXLIBS) include/* $<
+	$(CXX) $(CXXFLAGS) -o $@ include/* $< $(WXLIBS)
 build/simpletest: tests/simpletest.cpp
 	$(CXX) $(CXXFLAGS) -o $@ -g $<
 clean:

@@ -14,7 +14,7 @@ Running gg opens up a GUI that displays your program's stack, registers, variabl
 
 Any arguments that you pass to gg on startup will be passed to gdb.
 
-## Installation 
+## Automatic Installation 
 
 Arch Linux: 
 
@@ -23,18 +23,21 @@ trizen -S gg
 ```
 <sub><sup>\* replace `trizen` with your favorite AUR helper</sup></sub>
 
-Alternatively, you could clone this repository and build directly from source. 
-Note that these packages are requirements for the build process on Arch Linux:
+## Manual Installation
+
+Alternatively, you could clone this repository and build directly from source.<br>
+These packages are requirements for the build process on Arch Linux:
   * base-devel (build-essential on Debian-based distros)
   * wxgtk (libwxgtk3.0-dev on Debian-based distros)
+
 For any other distribution, you will have to find their equivalents on your respective package
 manager.
 
-After you have all the packages and you've `cd`'d into the repository, 
-building from source is as simple as:
+After you have all the packages and you've `cd`'d into a cloned version of this repository, run
 ```
 make
 ```
+The `gg` executable will be in the build/ folder.
 
 ## Backstory
 

@@ -30,6 +30,12 @@ Note that these packages are requirements for the build process on Arch Linux:
 For any other distribution, you will have to find their equivalents on your respective package
 manager.
 
+After you have all the packages and you've `cd`'d into the repository, 
+building from source is as simple as:
+```
+make
+```
+
 ## Backstory
 
 gg was intended for users who are running gdb on a remote machine. Specifically, I designed it for UCSD's [CSE 30](https://cse.ucsd.edu/undergraduate/courses/course-descriptions/cse-30-computer-organization-and-systems-programming) class, where all programming assignments are done over SSH. As long as X11 forwarding is enabled for the connection, the GUI will display correctly on the host machine.

@@ -2,12 +2,13 @@
 #include <iostream>
 #include <sstream>
 
+#include <readline/readline.h>
+#include <readline/history.h>
+
 #include <wx/notebook.h>
 #include <wx/gbsizer.h>
 
 #include "gg.hpp" 
-
-#include "../include/linenoise.h"
 
 // Helper function for determining if a string ends with a certain value.
 bool string_ends_with(std::string const & str, std::string const & ending) {
@@ -522,23 +523,19 @@ void open_console(int argc, char ** argv) {
   // Keep track of last command executed 
   const char * last_command = nullptr; 
 
-  // Allocate space for a lot of history 
-  linenoiseHistorySetMaxLen(GG_HISTORY_MAX_LENGTH);
-
   // Set deletion flags
   bool last_command_deletion = true;
   bool final_command_deletion = true;
 
   while (gdb.is_alive()) {
     // Read one line from stdin to process (blocking)
-    const char * command = linenoise(GDB_PROMPT);
+    const char * command = readline(GDB_PROMPT);
     last_command_deletion = true;
 
     // A null pointer signals EOF and GDB should execute quit 
     if (!command) {
-      // Linenoise does a weird thing where it prints a newline after Ctrl-D
-      // The solution is to jump up to previous line and rewrite it
-      std::cout << CURSOR_LINE_UP << GDB_PROMPT << GDB_QUIT << std::endl;
+      // Print quit command
+      std::cout << GDB_QUIT << std::endl;
 
       // Specify that the quit command should be executed
       command = GDB_QUIT; 
@@ -564,7 +561,7 @@ void open_console(int argc, char ** argv) {
 
     // Add the command to history if user executed something different previously
     if (!last_command || strcmp(command, last_command)) {
-      linenoiseHistoryAdd(command);
+      add_history(command);
     }
 
     // The current command becomes last command executed 

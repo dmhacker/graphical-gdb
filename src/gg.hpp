@@ -2,8 +2,6 @@
 
 #include "../include/pstream.hpp"
 
-#define CURSOR_LINE_UP "\e[A" 
-
 #define GG_FRAME_TITLE "GDB Display"
 #define GG_ABOUT_TITLE "About GG"
 #define GG_VERSION "0.0.1"

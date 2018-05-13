@@ -16,13 +16,19 @@ Any arguments that you pass to gg on startup will be passed to gdb.
 
 ## Installation 
 
-```
-sudo apt-get install gg
-```
+Arch Linux: 
 
-The other option is to clone this repository and build directly from source. Note that these packages are requirements for the build process:
-  * build-essential
-  * libwxgtk3.0-dev
+```
+trizen -S gg
+```
+<sub><sup>\* replace `trizen` with your favorite AUR helper</sup></sub>
+
+Alternatively, you could clone this repository and build directly from source. 
+Note that these packages are requirements for the build process on Arch Linux:
+  * base-devel (build-essential on Debian-based distros)
+  * wxgtk (libwxgtk3.0-dev on Debian-based distros)
+For any other distribution, you will have to find their equivalents on your respective package
+manager.
 
 ## Backstory
 

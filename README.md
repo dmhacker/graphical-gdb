@@ -19,9 +19,9 @@ Any arguments that you pass to gg on startup will be passed to gdb.
 Arch Linux: 
 
 ```
-aurman -S gg
+pikaur -S gg
 ```
-<sub><sup>\* replace `aurman` with your favorite AUR helper</sup></sub>
+<sub><sup>\* replace `pikaur` with your favorite AUR helper</sup></sub>
 
 ## Manual Installation
 

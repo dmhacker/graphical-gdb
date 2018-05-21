@@ -19,9 +19,9 @@ Any arguments that you pass to gg on startup will be passed to gdb.
 Arch Linux: 
 
 ```
-trizen -S gg
+aurman -S gg
 ```
-<sub><sup>\* replace `trizen` with your favorite AUR helper</sup></sub>
+<sub><sup>\* replace `aurman` with your favorite AUR helper</sup></sub>
 
 ## Manual Installation
 

@@ -1,6 +1,6 @@
 #include <wx/wx.h>
 
-#include "../include/pstream.hpp"
+#include "pstream.hpp"
 
 #define GG_FRAME_TITLE "GDB Display"
 #define GG_ABOUT_TITLE "About GG"

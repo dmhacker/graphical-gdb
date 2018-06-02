@@ -1,4 +1,4 @@
-# gg
+# graphical-gdb
 
 *It's as simple as*
 
@@ -16,12 +16,7 @@ Any arguments that you pass to gg on startup will be passed to gdb.
 
 ## Automatic Installation 
 
-Arch Linux: 
-
-```
-pikaur -S gg
-```
-<sub><sup>\* replace `pikaur` with your favorite AUR helper</sup></sub>
+Coming soon!
 
 ## Manual Installation
 

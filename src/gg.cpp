@@ -243,6 +243,8 @@ std::vector<MemoryLocation> GDB::get_stack_frame() {
   long frame_pointer = std::stol(frame_pointer_string, nullptr, 16);
   long stack_size = frame_pointer - stack_pointer;
 
+  // TODO
+
   return stack_frame;
 }
 

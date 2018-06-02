@@ -243,7 +243,12 @@ std::vector<MemoryLocation> GDB::get_stack_frame() {
   long frame_pointer = std::stol(frame_pointer_string, nullptr, 16);
   long stack_size = frame_pointer - stack_pointer;
 
-  // TODO
+  // Stack has negative size when main is finished
+  if (stack_size < 0) {
+    return stack_frame;
+  }
+
+  // TODO: popuplate stack frame vector
 
   return stack_frame;
 }

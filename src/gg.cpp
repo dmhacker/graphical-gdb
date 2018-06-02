@@ -216,10 +216,34 @@ std::string GDB::get_variable_value(const char * variable) {
 }
 
 std::vector<MemoryLocation> GDB::get_stack_frame() {
+  std::vector<MemoryLocation> stack_frame;
+
   // Program is not running
   if (!is_running_program()) {
-    return std::vector<MemoryLocation>();
+    return stack_frame; 
   }
+
+  std::string stack_pointer_output = 
+    execute_and_read(GDB_PRINT, GDB_STACK_POINTER);
+  std::string frame_pointer_output = 
+    execute_and_read(GDB_PRINT, GDB_FRAME_POINTER);
+
+  long start_offset = strlen(" (void *) ") + 1;
+  long stack_start_index = stack_pointer_output.find('=') + start_offset;
+  long frame_start_index = frame_pointer_output.find('=') + start_offset; 
+  long stack_end_index = stack_pointer_output.find('\n');
+  long frame_end_index = frame_pointer_output.find('\n');
+
+  std::string stack_pointer_string =
+    stack_pointer_output.substr(stack_start_index, stack_end_index);
+  std::string frame_pointer_string =
+    frame_pointer_output.substr(frame_start_index, frame_end_index);
+
+  long stack_pointer = std::stol(stack_pointer_string, nullptr, 16);
+  long frame_pointer = std::stol(frame_pointer_string, nullptr, 16);
+  long stack_size = frame_pointer - stack_pointer;
+
+  return stack_frame;
 }
 
 std::string GDB::get_assembly_code() {
@@ -490,6 +514,7 @@ long GDB::get_source_list_size() {
           params_update->SetString(gdb.get_formal_parameters());
           assembly_code_update->SetString(gdb.get_assembly_code());
           registers_update->SetString(gdb.get_registers());
+          gdb.get_stack_frame();
         }
         else {
           status_bar_update->SetString(GDB_STATUS_IDLE);

@@ -22,8 +22,11 @@
 #define GDB_INFO_LOCALS "info locals"
 #define GDB_INFO_PROGRAM "info program"
 #define GDB_INFO_REGISTERS "info registers"
-#define GDB_PRINT "print"
+#define GDB_PRINT "p"
 #define GDB_EXAMINE "x"
+
+#define GDB_STACK_POINTER "$sp"
+#define GDB_FRAME_POINTER "$fp"
 
 #define GDB_MEMORY_TYPE_LONG "x"
 #define GDB_MEMORY_TYPE_INSTRUCTION "i"

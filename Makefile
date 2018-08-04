@@ -17,7 +17,7 @@ build/.sentinel:
 	touch $@
 
 $(OBJDIR)/%.o: src/%.cpp src/gg.hpp build/.sentinel
-	$(CXX) $(CXXFLAGS) -c $< $(LIBS) -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 build/gg: $(OBJS) 
 	$(CXX) $(CXXFLAGS) $(OBJS) $(LIBS) -o $@

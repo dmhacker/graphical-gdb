@@ -1,12 +1,12 @@
-CXX=g++
-CXXFLAGS=-std=c++11 `wx-config --cxxflags`
+CXX = g++
+CXXFLAGS = -std=c++11 `wx-config --cxxflags`
 
-LIBS=-lreadline `wx-config --libs`
+LIBS = -lreadline `wx-config --libs`
 
-OBJDIR=build/.objs
+OBJDIR = build/.objs
 
-SRCS=src/gdb.cpp src/gui.cpp src/main.cpp
-OBJS=$(patsubst src/%,$(OBJDIR)/%,$(patsubst %.cpp,%.o,$(SRCS)))
+SRCS = src/gdb.cpp src/gui.cpp src/main.cpp
+OBJS = $(patsubst src/%,$(OBJDIR)/%,$(patsubst %.cpp,%.o,$(SRCS)))
 
 .PHONY: clean
 

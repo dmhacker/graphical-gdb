@@ -15,6 +15,7 @@ wxBEGIN_EVENT_TABLE(GDBFrame, wxFrame)
   EVT_COMMAND(wxID_ANY, GDB_EVT_PARAMS_UPDATE, GDBFrame::DoParamsUpdate)
   EVT_COMMAND(wxID_ANY, GDB_EVT_ASSEMBLY_CODE_UPDATE, GDBFrame::DoAssemblyCodeUpdate)
   EVT_COMMAND(wxID_ANY, GDB_EVT_REGISTERS_UPDATE, GDBFrame::DoRegistersUpdate)
+  EVT_COMMAND(wxID_ANY, GDB_EVT_STACK_FRAME_UPDATE, GDBFrame::DoStackFrameUpdate) 
 wxEND_EVENT_TABLE()
 
 // Macro to tell wxWidgets to use our GDB GUI application.
@@ -53,6 +54,8 @@ void update_console_and_gui(GDB & gdb) {
           new wxCommandEvent(GDB_EVT_ASSEMBLY_CODE_UPDATE);
         wxCommandEvent * registers_update =
           new wxCommandEvent(GDB_EVT_REGISTERS_UPDATE);
+        wxCommandEvent * stack_frame_update =
+          new wxCommandEvent(GDB_EVT_STACK_FRAME_UPDATE);
 
         // Set contents of events
         if (gdb.is_running_program()) {
@@ -63,13 +66,6 @@ void update_console_and_gui(GDB & gdb) {
           assembly_code_update->SetString(gdb.get_assembly_code());
           registers_update->SetString(gdb.get_registers());
 
-          std::vector<MemoryLocation> memory = gdb.get_stack_frame();
-
-          std::cout << std::hex;
-          for (MemoryLocation location : memory) {
-              std::cout << location.address << ": " << location.value << std::endl;
-          }
-          std::cout << std::dec;
         }
         else {
           status_bar_update->SetString(GDB_STATUS_IDLE);
@@ -80,6 +76,11 @@ void update_console_and_gui(GDB & gdb) {
           registers_update->SetString(GDB_NO_REGISTERS);
         }
 
+        std::vector<MemoryLocation> stack_frame = gdb.get_stack_frame();
+        std::vector<MemoryLocation> * stack_frame_heap = new std::vector<MemoryLocation>();
+        memcpy(stack_frame_heap, &stack_frame, sizeof(stack_frame));
+        stack_frame_update->SetClientData(stack_frame_heap);
+
         // Send events to GUI application
         handler->QueueEvent(status_bar_update);
         handler->QueueEvent(source_code_update); 
@@ -87,6 +88,7 @@ void update_console_and_gui(GDB & gdb) {
         handler->QueueEvent(params_update);
         handler->QueueEvent(assembly_code_update);
         handler->QueueEvent(registers_update);
+        handler->QueueEvent(stack_frame_update);
       }
     }
   }

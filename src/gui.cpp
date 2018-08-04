@@ -169,8 +169,18 @@ GDBStackPanel::GDBStackPanel(wxWindow * parent) : wxPanel(parent, wxID_ANY) {
   SetSizer(sizer);
 
   grid = new wxGrid(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
-  grid->CreateGrid(GetSize().GetHeight() * 3, 5);
+  grid->CreateGrid(GG_GRID_ROWS, 5);
   sizer->Add(grid, 1, wxEXPAND | wxALL, 5);
 }
 
-
+void GDBStackPanel::SetStackFrame(std::vector<MemoryLocation> stack_frame) {
+    if (grid->GetNumberRows()) {
+      grid->DeleteRows(0, grid->GetNumberRows());
+    }
+    if (stack_frame.size()) {
+      grid->AppendRows(stack_frame.size() / 4);
+    }
+    else {
+      grid->AppendRows(GG_GRID_ROWS);
+    }
+}

@@ -11,6 +11,7 @@
 
 #define GG_FRAME_LINES 19
 #define GG_HISTORY_MAX_LENGTH 1000
+#define GG_GRID_ROWS 20
 
 #define GDB_PROMPT "(gdb) " 
 #define GDB_QUIT "quit"
@@ -49,6 +50,7 @@ const wxEventType GDB_EVT_LOCALS_UPDATE = wxNewEventType();
 const wxEventType GDB_EVT_PARAMS_UPDATE = wxNewEventType();
 const wxEventType GDB_EVT_ASSEMBLY_CODE_UPDATE = wxNewEventType();
 const wxEventType GDB_EVT_REGISTERS_UPDATE = wxNewEventType();
+const wxEventType GDB_EVT_STACK_FRAME_UPDATE = wxNewEventType();
 
 // Represents a location in memory.
 typedef struct {
@@ -196,6 +198,9 @@ class GDBStackPanel : public wxPanel {
   wxGrid * grid;
   public:
   GDBStackPanel(wxWindow * parent);
+
+  // Sets the grid of the stack frame.
+  void SetStackFrame(std::vector<MemoryLocation> stack_frame);
 };
 
 // GUI top level display frame.
@@ -247,6 +252,11 @@ class GDBFrame : public wxFrame {
   // Registers display should be updated.
   void DoRegistersUpdate(wxCommandEvent & event) {
     assemblyPanel->SetRegisters(event.GetString());
+  }
+
+  void DoStackFrameUpdate(wxCommandEvent & event) {
+    auto data = (std::vector<MemoryLocation> *) event.GetClientData();
+    stackPanel->SetStackFrame(*data);
   }
 
   // Macro to specify that this frame has events that need binding

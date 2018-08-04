@@ -2,17 +2,27 @@ CXX=g++
 CXXFLAGS=-std=c++11 `wx-config --cxxflags`
 
 LIBS=-lreadline `wx-config --libs`
-CLZS=src/gdb.cpp src/gui.cpp
+
+OBJDIR=build/.objs
+
+SRCS=src/gdb.cpp src/gui.cpp src/main.cpp
+OBJS=$(patsubst src/%,$(OBJDIR)/%,$(patsubst %.cpp,%.o,$(SRCS)))
 
 .PHONY: clean
 
 all: build/gg build/simpletest
 
-build/gg: $(CLZS) 
-	mkdir -p build
-	$(CXX) $(CXXFLAGS) $(CLZS) $(LIBS) -o $@
+build/.sentinel: 
+	mkdir -p $(OBJDIR) 
+	touch $@
 
-build/simpletest: tests/simpletest.cpp
+$(OBJDIR)/%.o: src/%.cpp src/gg.hpp build/.sentinel
+	$(CXX) $(CXXFLAGS) -c $< $(LIBS) -o $@
+
+build/gg: $(OBJS) 
+	$(CXX) $(CXXFLAGS) $(OBJS) $(LIBS) -o $@
+
+build/simpletest: tests/simpletest.cpp build/.sentinel
 	$(CXX) $(CXXFLAGS) $< -o $@ -g
 
 clean:

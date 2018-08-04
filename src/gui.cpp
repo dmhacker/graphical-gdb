@@ -1,5 +1,7 @@
 #include <wx/notebook.h>
 #include <wx/gbsizer.h>
+#include <wx/grid.h>
+#include <wx/dataview.h>
 
 #include "gg.hpp" 
 
@@ -65,6 +67,10 @@ GDBFrame::GDBFrame(const wxString & title,
   // Create assembly code display
   assemblyPanel = new GDBAssemblyPanel(tabs);
   tabs->AddPage(assemblyPanel, "Assembly");
+
+  // Create stack frame display
+  stackPanel = new GDBStackPanel(tabs);
+  tabs->AddPage(stackPanel, "Stack Frames");
 }
 
 void GDBFrame::OnAbout(wxCommandEvent & event) {
@@ -133,7 +139,7 @@ GDBAssemblyPanel::GDBAssemblyPanel(wxWindow * parent) :
   wxPanel(parent, wxID_ANY) 
 {
   // Create sizer
-  wxBoxSizer * sizer = new wxBoxSizer(wxHORIZONTAL);
+  wxGridBagSizer * sizer = new wxGridBagSizer();
   SetSizer(sizer);
 
   // Style for future text boxes
@@ -143,13 +149,28 @@ GDBAssemblyPanel::GDBAssemblyPanel(wxWindow * parent) :
   assemblyCodeText = new wxTextCtrl(this, wxID_ANY, 
       wxT(GDB_NO_ASSEMBLY_CODE),
       wxDefaultPosition, wxDefaultSize, textCtrlStyle);
-  sizer->Add(assemblyCodeText, 1, wxALL | wxEXPAND, 5);
+  sizer->Add(assemblyCodeText, wxGBPosition(0, 0), wxGBSpan(2, 1), wxALL | wxEXPAND, 5);
 
   // Create registers display and add to sizer
   registersText = new wxTextCtrl(this, wxID_ANY, 
       wxT(GDB_NO_REGISTERS),
       wxDefaultPosition, wxDefaultSize, textCtrlStyle);
-  sizer->Add(registersText, 1, wxALL | wxEXPAND, 5);
+  sizer->Add(registersText, wxGBPosition(0, 1), wxGBSpan(2, 1), wxALL | wxEXPAND, 5);
+
+  // Specify sizer rows and columns that should be growable
+  sizer->AddGrowableRow(0, 1);
+  sizer->AddGrowableCol(0, 1);
+  sizer->AddGrowableRow(1, 1);
+  sizer->AddGrowableCol(1, 1);
+}
+
+GDBStackPanel::GDBStackPanel(wxWindow * parent) : wxPanel(parent, wxID_ANY) {
+  wxBoxSizer * sizer = new wxBoxSizer(wxHORIZONTAL);
+  SetSizer(sizer);
+
+  grid = new wxGrid(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+  grid->CreateGrid(GetSize().GetHeight() * 3, 5);
+  sizer->Add(grid, 1, wxEXPAND | wxALL, 5);
 }
 
 

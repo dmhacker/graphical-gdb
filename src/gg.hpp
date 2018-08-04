@@ -31,6 +31,7 @@
 
 #define GDB_MEMORY_TYPE_LONG "x"
 #define GDB_MEMORY_TYPE_INSTRUCTION "i"
+#define GDB_MEMORY_SIZE_BYTE "b"
 
 #define GDB_STATUS_IDLE "GDB is idle."
 #define GDB_STATUS_RUNNING "GDB is currently running a program."

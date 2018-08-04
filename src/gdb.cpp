@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 
 #include "gg.hpp" 
 
@@ -241,7 +242,19 @@ std::vector<MemoryLocation> GDB::get_stack_frame() {
     return stack_frame;
   }
 
-  // TODO: popuplate stack frame vector
+  // TODO: populate stack frame vector
+  std::cout << std::hex << std::setfill('0') << std::setw(2);
+  std::cout << stack_pointer << std::endl;
+  std::cout << frame_pointer << std::endl;
+  std::cout << std::dec;
+  std::cout << stack_size << std::endl;
+  
+  char examine[100];
+  snprintf(examine, 100, "%s/%ld%s%s", GDB_EXAMINE, stack_size, GDB_MEMORY_SIZE_BYTE, GDB_MEMORY_TYPE_LONG);
+  std::cout << examine << std::endl;
+  std::string stack_frame_output = execute_and_read(examine, GDB_STACK_POINTER);
+  
+  std::cout << stack_frame_output << std::endl;
 
   return stack_frame;
 }

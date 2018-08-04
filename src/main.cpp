@@ -62,7 +62,14 @@ void update_console_and_gui(GDB & gdb) {
           params_update->SetString(gdb.get_formal_parameters());
           assembly_code_update->SetString(gdb.get_assembly_code());
           registers_update->SetString(gdb.get_registers());
-          gdb.get_stack_frame();
+
+          std::vector<MemoryLocation> memory = gdb.get_stack_frame();
+
+          std::cout << std::hex;
+          for (MemoryLocation location : memory) {
+              std::cout << location.address << ": " << location.value << std::endl;
+          }
+          std::cout << std::dec;
         }
         else {
           status_bar_update->SetString(GDB_STATUS_IDLE);

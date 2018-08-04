@@ -51,10 +51,10 @@ const wxEventType GDB_EVT_ASSEMBLY_CODE_UPDATE = wxNewEventType();
 const wxEventType GDB_EVT_REGISTERS_UPDATE = wxNewEventType();
 
 // Represents a location in memory.
-struct MemoryLocation {
-  std::string address;
-  std::string value;
-};
+typedef struct {
+  long address;
+  long value;
+} MemoryLocation;
 
 // GDB process abstraction.
 class GDB {

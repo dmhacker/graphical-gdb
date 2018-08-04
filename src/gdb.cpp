@@ -16,6 +16,21 @@ bool string_contains(std::string const & str, std::string const & value) {
   return str.find(value) != std::string::npos;
 }
 
+template<typename Out>
+void split(const std::string &s, char delim, Out result) {
+    std::stringstream ss(s);
+    std::string item;
+    while (std::getline(ss, item, delim)) {
+        *(result++) = item;
+    }
+}
+
+std::vector<std::string> split(const std::string &s, char delim) {
+    std::vector<std::string> elems;
+    split(s, delim, std::back_inserter(elems));
+    return elems;
+}
+
 GDB::GDB(std::vector<std::string> args) : 
   process("gdb", args, 
       redi::pstreams::pstdin | 
@@ -238,23 +253,37 @@ std::vector<MemoryLocation> GDB::get_stack_frame() {
   long stack_size = frame_pointer - stack_pointer;
 
   // Stack has negative size when main is finished
-  if (stack_size < 0) {
+  if (stack_size <= 0) {
     return stack_frame;
   }
 
-  // TODO: populate stack frame vector
-  std::cout << std::hex << std::setfill('0') << std::setw(2);
-  std::cout << stack_pointer << std::endl;
-  std::cout << frame_pointer << std::endl;
-  std::cout << std::dec;
-  std::cout << stack_size << std::endl;
-  
+  // Create and execute the GDB memory examine command for the stack
   char examine[100];
   snprintf(examine, 100, "%s/%ld%s%s", GDB_EXAMINE, stack_size, GDB_MEMORY_SIZE_BYTE, GDB_MEMORY_TYPE_LONG);
-  std::cout << examine << std::endl;
   std::string stack_frame_output = execute_and_read(examine, GDB_STACK_POINTER);
-  
-  std::cout << stack_frame_output << std::endl;
+
+  // Iterate through lines, then tab-delimited tokens
+  long index = 0;
+  for(std::string line : split(stack_frame_output, '\n')) {
+    for (std::string token : split(line, '\t')) {
+      // Ignore tokens that are addresses, since we know the beginning and ending addresses
+      if (!string_ends_with(token, ":")) {
+        // Create a heap-allocated struct to hold memory values
+        MemoryLocation * stack_value = new MemoryLocation;
+        stack_value->address = stack_pointer + index;
+        stack_value->value = std::stol(token, nullptr, 16);
+
+        // Make a copy of the struct and push it to vector
+        stack_frame.push_back(*stack_value);
+
+        // Delete the heap-allocated struct since it is copied to the vector
+        delete stack_value;
+
+        // Increment the memory index (from the start)
+        index++;
+      }
+    }
+  }
 
   return stack_frame;
 }

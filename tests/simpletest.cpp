@@ -1,26 +1,6 @@
 #include <iostream>
 
-int main() {
-  // Statements should be printed to console
-  std::cout << "This is a simple test of stdout." << std::endl;
-  std::cerr << "This is a simple test of stderr." << std::endl;
-  std::cerr << "Testing stderr again." << std::endl;
-  std::cout << "Testing stdout again." << std::endl;
-
-  // Arithmetic operations
-  int a = 1;
-  int b = 2;
-  int c = 3;
-  int d = a + b;
-
-  // Comparison operations
-  bool cd = c == d;
-
-  // Print results of operations
-  std::cout << "c is " << c << std::endl;
-  std::cout << "d is " << d << std::endl;
-  std::cout << "c = d? " << cd << std::endl;
-
+void endianness() {
   // Test endianess
   int val = 0x30313233;
   char * ptr = (char *) &val;
@@ -43,4 +23,28 @@ int main() {
   else {
     std::cout << "Thus, your system is little endian." << std::endl;
   }
+}
+
+int main() {
+  // Statements should be printed to console
+  std::cout << "This is a simple test of stdout." << std::endl;
+  std::cerr << "This is a simple test of stderr." << std::endl;
+  std::cerr << "Testing stderr again." << std::endl;
+  std::cout << "Testing stdout again." << std::endl;
+
+  // Arithmetic operations
+  int a = 1;
+  int b = 2;
+  int c = 3;
+  int d = a + b;
+
+  // Comparison operations
+  bool cd = c == d;
+
+  // Print results of operations
+  std::cout << "c is " << c << std::endl;
+  std::cout << "d is " << d << std::endl;
+  std::cout << "c = d? " << cd << std::endl;
+
+  endianness(); 
 }

@@ -1,6 +1,6 @@
 #include <wx/wx.h>
 
-#include "pstream.hpp"
+#include "../include/pstream.hpp"
 
 #define GG_FRAME_TITLE "GDB Display"
 #define GG_ABOUT_TITLE "About GG"
@@ -242,18 +242,3 @@ class GDBFrame : public wxFrame {
     // Macro to specify that this frame has events that need binding
     wxDECLARE_EVENT_TABLE();
 };
-
-// Macros used for binding events to wxWidgets frame functions.
-wxBEGIN_EVENT_TABLE(GDBFrame, wxFrame)
-  EVT_MENU(wxID_EXIT, GDBFrame::OnExit)
-  EVT_MENU(wxID_ABOUT, GDBFrame::OnAbout)
-  EVT_COMMAND(wxID_ANY, GDB_EVT_STATUS_BAR_UPDATE, GDBFrame::DoStatusBarUpdate)
-  EVT_COMMAND(wxID_ANY, GDB_EVT_SOURCE_CODE_UPDATE, GDBFrame::DoSourceCodeUpdate)
-  EVT_COMMAND(wxID_ANY, GDB_EVT_LOCALS_UPDATE, GDBFrame::DoLocalsUpdate)
-  EVT_COMMAND(wxID_ANY, GDB_EVT_PARAMS_UPDATE, GDBFrame::DoParamsUpdate)
-  EVT_COMMAND(wxID_ANY, GDB_EVT_ASSEMBLY_CODE_UPDATE, GDBFrame::DoAssemblyCodeUpdate)
-  EVT_COMMAND(wxID_ANY, GDB_EVT_REGISTERS_UPDATE, GDBFrame::DoRegistersUpdate)
-wxEND_EVENT_TABLE()
-
-// Macro to tell wxWidgets to use our GDB GUI application.
-wxIMPLEMENT_APP_NO_MAIN(GDBApp);

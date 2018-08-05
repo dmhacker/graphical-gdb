@@ -1,5 +1,8 @@
 # graphical-gdb
 
+<a><img src="https://github.com/dmhacker/graphical-gdb/blob/master/images/terminal.png" align="center" height="210" width="425"></a>
+<a><img src="https://github.com/dmhacker/graphical-gdb/blob/master/images/gui.png" align="center" height="210" width="425"></a>
+
 **gg** (graphical gdb) is a wrapper around GDB that provides you with a visual of your program's current state. 
 
 Running this program opens up a GUI that displays your program's stack, registers, variables, code, and assembly.  

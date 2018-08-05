@@ -1,11 +1,5 @@
 # graphical-gdb
 
-*It's as simple as*
-
-```
-gg a.out
-```
-
 **gg** (graphical gdb) is a wrapper around GDB that provides you with a visual of your program's current state. 
 
 Running this program opens up a GUI that displays your program's stack, registers, variables, code, and assembly.  

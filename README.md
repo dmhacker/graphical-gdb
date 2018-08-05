@@ -22,8 +22,9 @@ Any command line arguments given will be passed to GDB.
 git clone https://github.com/dmhacker/graphical-gdb
 cd graphical-gdb
 make
-build/gg ...
 ```
+
+The output executable is in the `build` folder.
 
 These packages are requirements for the build process on Arch Linux:
   * base-devel (build-essential on Debian-based distros)

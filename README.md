@@ -6,8 +6,6 @@
 gg a.out
 ```
 
-## Summary
-
 **gg** (graphical gdb) is a wrapper around GDB that provides you with a visual of your program's current state. 
 
 Running this program opens up a GUI that displays your program's stack, registers, variables, code, and assembly.  

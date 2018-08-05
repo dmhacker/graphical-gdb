@@ -66,7 +66,7 @@ void update_console_and_gui(GDB & gdb) {
           params_update->SetString(gdb.get_formal_parameters());
           assembly_code_update->SetString(gdb.get_assembly_code());
           registers_update->SetString(gdb.get_registers());
-
+          stack_frame_update->SetClientData(gdb.get_stack_frame());
         }
         else {
           status_bar_update->SetString(GDB_STATUS_IDLE);
@@ -75,15 +75,8 @@ void update_console_and_gui(GDB & gdb) {
           params_update->SetString(GDB_NO_PARAMS);
           assembly_code_update->SetString(GDB_NO_ASSEMBLY_CODE);
           registers_update->SetString(GDB_NO_REGISTERS);
+          stack_frame_update->SetClientData(nullptr);
         }
-
-        std::vector<MemoryLocation> stack_frame = gdb.get_stack_frame();
-        MemoryLocation * stack_frame_array = stack_frame.size() ? (MemoryLocation *) malloc(sizeof(MemoryLocation) * stack_frame.size()) : nullptr;
-        for (int index = 0; index < stack_frame.size(); index++) {
-          memcpy(stack_frame_array + index, &stack_frame[index], sizeof(MemoryLocation));
-        }
-        stack_frame_update->SetClientData(stack_frame_array);
-        stack_frame_update->SetExtraLong(stack_frame.size());
 
         // Send events to GUI application
         handler->QueueEvent(status_bar_update);

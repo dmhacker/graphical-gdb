@@ -53,9 +53,11 @@ const wxEventType GDB_EVT_STACK_FRAME_UPDATE = wxNewEventType();
 
 // Represents a location in memory.
 typedef struct {
-  long address;
-  long value;
-} MemoryLocation;
+  long stack_pointer;
+  long frame_pointer; 
+  long * memory;
+  long memory_length;
+} StackFrame;
 
 // GDB process abstraction.
 class GDB {
@@ -99,8 +101,8 @@ class GDB {
   // Gets the value of a variable.
   std::string get_variable_value(const char * variable);
 
-  // Gets the value of the current stack frame.
-  std::vector<MemoryLocation> get_stack_frame();
+  // Gets a heap-allocated StackFrame struct with information about the current stack frame. 
+  StackFrame * get_stack_frame();
 
   // Gets the assembly code for the function GDB is in.
   std::string get_assembly_code();
@@ -203,7 +205,7 @@ class GDBStackPanel : public wxPanel {
 
   // Sets the grid of the stack frame.
   // Note that the stack_frame data is deleted after this function call.
-  void SetStackFrame(MemoryLocation * stack_frame, long stack_frame_size);
+  void SetStackFrame(StackFrame * stack_frame);
 };
 
 // GUI top level display frame.
@@ -258,9 +260,8 @@ class GDBFrame : public wxFrame {
   }
 
   void DoStackFrameUpdate(wxCommandEvent & event) {
-    MemoryLocation * data = (MemoryLocation *) event.GetClientData();
-    stackPanel->SetStackFrame(data, event.GetExtraLong());
-    delete data;
+    StackFrame * stack_frame = (StackFrame *) event.GetClientData();
+    stackPanel->SetStackFrame(stack_frame);
   }
 
   // Macro to specify that this frame has events that need binding

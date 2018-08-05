@@ -198,26 +198,30 @@ GDBStackPanel::GDBStackPanel(wxWindow * parent) : wxPanel(parent, wxID_ANY), sta
   sizer->Add(grid, 1, wxEXPAND | wxALL, 5);
 }
 
-void GDBStackPanel::SetStackFrame(MemoryLocation * stack_frame, long stack_frame_size) {
+void GDBStackPanel::SetStackFrame(StackFrame * stack_frame) {
   // Delete old rows from the grid
   if (grid->GetNumberRows()) {
     grid->DeleteRows(0, grid->GetNumberRows());
   }
 
-  // Add new rows if the stack frame size is greater than 0
-  if (stack_frame_size) {
-    long stack_pointer = stack_frame[0].address;
-    long frame_pointer = stack_pointer + stack_frame_size;
-
+  // Add new rows if the stack frame is not null 
+  if (stack_frame && stack_frame->memory_length) {
     if (stack_global) {
+      // Determine the border addresses of the full stack & of the stack frame
+      long stack_frame_top = stack_frame->stack_pointer; 
+      long stack_frame_bottom = stack_frame->stack_pointer + stack_frame->memory_length; 
       long stack_bottom = stack_top + stack_size;
 
-      long new_stack_top = stack_pointer < stack_top ? stack_pointer : stack_top;
-      long new_stack_bottom = frame_pointer > stack_bottom ? frame_pointer : stack_bottom;
+      // Determine the border addresses of the combined stack
+      long new_stack_top = stack_frame_top < stack_top ? stack_frame_top : stack_top; 
+      long new_stack_bottom = stack_frame_bottom > stack_bottom ? stack_frame_bottom : stack_bottom;
       long new_stack_size = new_stack_bottom - new_stack_top;
 
+      // Create the new, combined stack as a list of long values (representing bytes)
       long * new_stack;
       int free_old_stack;
+
+      // If the stack border addresses haven't changed, we can reuse the old stack array and avoid malloc'ing a new one
       if (new_stack_top == stack_top && new_stack_bottom == stack_bottom) {
         new_stack = stack_global;
         free_old_stack = 0;
@@ -226,66 +230,81 @@ void GDBStackPanel::SetStackFrame(MemoryLocation * stack_frame, long stack_frame
         new_stack = (long *) malloc(new_stack_size * sizeof(long));
         free_old_stack = 1;
       }
-
+      
+      // Copy the values of the stack frame and the old stack into the new stack
       for (int index = 0; index < new_stack_size; index++) {
         long address = new_stack_top + index;
-        if (address >= stack_pointer && address < frame_pointer) {
-          new_stack[index] = stack_frame[address - stack_pointer].value;
+
+        // The stack frame takes precedence, since it represents the most recently known values
+        if (address >= stack_frame_top && address < stack_frame_bottom) {
+          new_stack[index] = stack_frame->memory[address - stack_frame_top];
         }
+        // The old stack is then used to fill the new stack's values 
         else if (address >= stack_top && address < stack_bottom) {
           new_stack[index] = stack_global[address - stack_top];
         }
+        // Any unknown addresses are filled with 0's
         else {
           new_stack[index] = 0;
         }
       }
 
+      // If we created a new stack, we need to delete the old stack to prevent memory leaks
       if (free_old_stack) {
         delete stack_global;
       }
 
+      // Replace the stack values
       stack_global = new_stack;
       stack_size = new_stack_size;
       stack_top = new_stack_top;
     }
     else {
-      stack_global = (long *) malloc(stack_frame_size * sizeof(long));
-      stack_size = stack_frame_size;
-      stack_top = stack_frame[0].address;
+      // Since the stack doesn't exist, we need to allocate memory for it
+      stack_global = (long *) malloc(stack_frame->memory_length * sizeof(long));
+      stack_size = stack_frame->memory_length;
+      stack_top = stack_frame->stack_pointer;
 
-      for (int index = 0; index < stack_frame_size; index++) {
-        stack_global[index] = stack_frame[index].value;
-      }
+      // The stack frame is the entire stack, so we copy the frame's values into the global stack 
+      memcpy(stack_global, stack_frame->memory, stack_frame->memory_length * sizeof(long));
     }
 
+    // Each row has 4 columns of memory values
     grid->AppendRows(stack_size / 4);
 
     // Loop through each value on the stack
     for (int index = 0; index < stack_size; index++) {
-      // Fetch the stack value 
-      long stack_value = stack_global[index];
-      long stack_address = stack_top + index;
-
-      // GUI positional arguments: where the value should be displayed 
+      long value = stack_global[index];
+      long address = stack_top + index;
       long row =  index / 4;
       long col = index % 4;
 
       // Set the row address & frame pointer offset
       if (col == 0) {
-        grid->SetRowLabelValue(row, long_to_string(index - stack_frame_size, 0)); 
         grid->SetCellValue(row, 0, long_to_string(stack_top + index, 1)); 
-        
+
+        if (address < stack_frame->stack_pointer) {
+          grid->SetRowLabelValue(row, "n/a");
+
+          for (long col2 = 0; col2 < 5; col2++) {
+            grid->SetCellBackgroundColour(row, col2, wxColour(200, 200, 200));
+          }
+        }
+        else {
+          grid->SetRowLabelValue(row, long_to_string(address - stack_frame->frame_pointer, 0)); 
+        }
+
         // Highlight the stack pointer
-        if (stack_address == stack_pointer) {
+        if (address == stack_frame->stack_pointer) {
           grid->SetCellBackgroundColour(row, 0, wxColour(255, 255, 124));
         }
-        else if (stack_address == frame_pointer) {
+        else if (address == stack_frame->frame_pointer) {
           grid->SetCellBackgroundColour(row, 0, wxColour(182, 149, 192));
         }
       }
 
       // Set the cell value to be the stack value
-      grid->SetCellValue(row, col + 1, long_to_string(stack_value, 1));
+      grid->SetCellValue(row, col + 1, long_to_string(value, 1));
     }
   }
   else {
@@ -295,5 +314,13 @@ void GDBStackPanel::SetStackFrame(MemoryLocation * stack_frame, long stack_frame
       stack_size = 0;
       stack_top = 0;
     }
+  }
+
+  // Delete the stack frame and any memory associated with it
+  if (stack_frame) {
+    if (stack_frame->memory) {
+      delete stack_frame->memory;
+    }
+    delete stack_frame;
   }
 }

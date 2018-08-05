@@ -31,9 +31,3 @@ These packages are requirements for the build process on Arch Linux:
   * wxgtk (libwxgtk3.0-dev on Debian-based distros)
 
 For any other distribution, you will have to find their equivalents on your respective package manager.
-
-## Backstory
-
-This program is intended for users who are running GDB remotely.
-It was designed for use in UCSD's [CSE 30](https://cse.ucsd.edu/undergraduate/courses/course-descriptions/cse-30-computer-organization-and-systems-programming) class, where all programming assignments are done over SSH. 
-As long as X11 forwarding is enabled for the connection, the GUI should display correctly on the host machine.

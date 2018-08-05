@@ -198,14 +198,29 @@ GDBStackPanel::GDBStackPanel(wxWindow * parent) : wxPanel(parent, wxID_ANY), sta
   sizer->Add(grid, 1, wxEXPAND | wxALL, 5);
 }
 
+GDBStackPanel::~GDBStackPanel() {
+  // The destructor just needs to clean up the global stack if it exists.
+  if (stack_global) {
+    delete stack_global;
+  }
+}
+
 void GDBStackPanel::SetStackFrame(StackFrame * stack_frame) {
   // Delete old rows from the grid
   if (grid->GetNumberRows()) {
     grid->DeleteRows(0, grid->GetNumberRows());
   }
 
-  // Add new rows if the stack frame is not null 
-  if (stack_frame && stack_frame->memory_length) {
+  if (!stack_frame || !stack_frame->memory) {
+    // Clear the global stack if given an empty stack frame
+    if (stack_global) {
+      delete stack_global;
+      stack_global = nullptr;
+      stack_size = 0;
+      stack_top = 0;
+    }
+  }
+  else {
     if (stack_global) {
       // Determine the border addresses of the full stack & of the stack frame
       long stack_frame_top = stack_frame->stack_pointer; 
@@ -283,9 +298,12 @@ void GDBStackPanel::SetStackFrame(StackFrame * stack_frame) {
       if (col == 0) {
         grid->SetCellValue(row, 0, long_to_string(stack_top + index, 1)); 
 
+        // Switch row identification based on its location relative to the stack pointer
         if (address < stack_frame->stack_pointer) {
+          // Rows above the stack pointer shouldn't be accessed via the frame pointer
           grid->SetRowLabelValue(row, "n/a");
 
+          // Grey out memory above the stack pointer; this is garbage space
           for (long col2 = 0; col2 < 5; col2++) {
             grid->SetCellBackgroundColour(row, col2, wxColour(200, 200, 200));
           }
@@ -305,14 +323,6 @@ void GDBStackPanel::SetStackFrame(StackFrame * stack_frame) {
 
       // Set the cell value to be the stack value
       grid->SetCellValue(row, col + 1, long_to_string(value, 1));
-    }
-  }
-  else {
-    if (stack_global) {
-      delete stack_global;
-      stack_global = nullptr;
-      stack_size = 0;
-      stack_top = 0;
     }
   }
 

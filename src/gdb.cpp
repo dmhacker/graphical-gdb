@@ -4,6 +4,16 @@
 
 #include "gg.hpp" 
 
+#ifdef __arm__
+  #define ADDITIONAL_STACK_SPACE 4
+#elif defined(__amd64__)
+  #define ADDITIONAL_STACK_SPACE  16
+#elif defined(__i386__)
+  #define ADDITIONAL_STACK_SPACE 8
+#else
+  #define ADDITIONAL_STACK_SPACE 0
+#endif
+
 // Helper function for determining if a string ends with a certain value.
 bool string_ends_with(std::string const & str, std::string const & ending) {
   if (ending.size() > str.size()) 
@@ -261,7 +271,7 @@ StackFrame * GDB::get_stack_frame() {
   StackFrame * stack_frame = (StackFrame *) malloc(sizeof(StackFrame)); 
   stack_frame->stack_pointer = stack_pointer;
   stack_frame->frame_pointer = frame_pointer;
-  stack_frame->memory_length = stack_frame_length + 4;
+  stack_frame->memory_length = stack_frame_length + ADDITIONAL_STACK_SPACE;
   stack_frame->memory = (long *) malloc(stack_frame->memory_length * sizeof(long));
 
   // Create and execute the GDB memory examine command for the stack

@@ -201,7 +201,11 @@ class GDBStackPanel : public wxPanel {
   long stack_size;
   long stack_top;
   public:
+  // Constructor for the panel.
   GDBStackPanel(wxWindow * parent);
+
+  // Deconstructor for the panel.
+  ~GDBStackPanel();
 
   // Sets the grid of the stack frame.
   // Note that the stack_frame data is deleted after this function call.

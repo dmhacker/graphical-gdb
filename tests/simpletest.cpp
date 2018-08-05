@@ -29,6 +29,8 @@ void otherfunction() {
   int a = 10;
   int b = a * 2;
   std::cout << a << " * 2 = " << b << std::endl;
+
+  endianness();
 }
 
 int main() {

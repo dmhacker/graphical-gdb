@@ -6,6 +6,15 @@
 
 #include "gg.hpp" 
 
+std::string long_to_string(long value, int use_hex) {
+  std::stringstream conversion;
+  if (use_hex)
+    conversion << "0x" << std::hex << value;
+  else
+    conversion << value;
+  return conversion.str();
+}
+
 bool GDBApp::OnInit() {
   // Determine screen and application dimensions
   long screen_x = wxSystemSettings::GetMetric(wxSYS_SCREEN_X);
@@ -166,42 +175,61 @@ GDBAssemblyPanel::GDBAssemblyPanel(wxWindow * parent) :
 }
 
 GDBStackPanel::GDBStackPanel(wxWindow * parent) : wxPanel(parent, wxID_ANY) {
+  // A simple box sizer should suffice
   wxBoxSizer * sizer = new wxBoxSizer(wxHORIZONTAL);
   SetSizer(sizer);
 
+  // Create the grid object and the five columns that go with it
   grid = new wxGrid(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
-  grid->CreateGrid(GG_GRID_ROWS, 5);
+  grid->CreateGrid(0, 5);
+
+  // Set the titles for each column
   grid->SetColLabelValue(0, "Address\t\t");
-  grid->SetColLabelValue(1, "*(Address + 0)\t\t");
-  grid->SetColLabelValue(2, "*(Address + 1)\t\t");
-  grid->SetColLabelValue(3, "*(Address + 2)\t\t");
-  grid->SetColLabelValue(4, "*(Address + 3)\t\t");
-  grid->Fit();
+  grid->SetColLabelValue(1, "Address[0]\t\t");
+  grid->SetColLabelValue(2, "Address[1]\t\t");
+  grid->SetColLabelValue(3, "Address[2]\t\t");
+  grid->SetColLabelValue(4, "Address[3]\t\t");
+
+  // Disable editing & resize grid to fit labels
+  grid->AutoSize();
+  grid->EnableEditing(false);
+
+  // Add the grid to the sizer
   sizer->Add(grid, 1, wxEXPAND | wxALL, 5);
 }
 
 void GDBStackPanel::SetStackFrame(MemoryLocation * stack_frame, long stack_frame_size) {
-    if (grid->GetNumberRows()) {
-      grid->DeleteRows(0, grid->GetNumberRows());
-    }
-    if (stack_frame_size) {
-      grid->AppendRows(stack_frame_size / 4);
+  // Delete old rows from the grid
+  if (grid->GetNumberRows()) {
+    grid->DeleteRows(0, grid->GetNumberRows());
+  }
 
-      for (int index = 0; index < stack_frame_size; index++) {
-        MemoryLocation * stack_value = stack_frame + index;
-        long row =  index / 4;
-        long col = index % 4 + 1;
-        if (index % 4 == 0) {
-          std::stringstream address;
-          address << "0x" << std::hex << stack_value->address;
-          grid->SetCellValue(row, 0, address.str());
+  // Add new rows if the stack frame size is greater than 0
+  if (stack_frame_size) {
+    grid->AppendRows(stack_frame_size / 4);
+
+    // Loop through each value on the stack
+    for (int index = 0; index < stack_frame_size; index++) {
+      // A pointer to the stack value 
+      MemoryLocation * stack_value = stack_frame + index;
+
+      // GUI positional arguments: where the value should be displayed 
+      long row =  index / 4;
+      long col = index % 4;
+
+      // Set the row address & frame pointer offset
+      if (col == 0) {
+        grid->SetRowLabelValue(row, long_to_string(index - stack_frame_size, 0)); 
+        grid->SetCellValue(row, 0, long_to_string(stack_value->address, 1)); 
+        
+        // Highlight the stack pointer
+        if (row == 0) {
+          grid->SetCellBackgroundColour(0, 0, wxColour(255, 255, 124));
         }
-        std::stringstream byte;
-        byte << "0x" << std::hex << stack_value->value;
-        grid->SetCellValue(row, col, byte.str());
       }
+
+      // Set the cell value to be the stack value
+      grid->SetCellValue(row, col + 1, long_to_string(stack_value->value, 1));
     }
-    else {
-      grid->AppendRows(GG_GRID_ROWS);
-    }
+  }
 }

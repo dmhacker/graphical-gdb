@@ -25,6 +25,12 @@ void endianness() {
   }
 }
 
+void otherfunction() {
+  int a = 10;
+  int b = a * 2;
+  std::cout << a << " * 2 = " << b << std::endl;
+}
+
 int main() {
   // Statements should be printed to console
   std::cout << "This is a simple test of stdout." << std::endl;
@@ -47,4 +53,5 @@ int main() {
   std::cout << "c = d? " << cd << std::endl;
 
   endianness(); 
+  otherfunction();
 }

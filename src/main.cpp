@@ -2,6 +2,7 @@
 
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <stdio.h>
 
 #include "gg.hpp" 
 
@@ -77,9 +78,12 @@ void update_console_and_gui(GDB & gdb) {
         }
 
         std::vector<MemoryLocation> stack_frame = gdb.get_stack_frame();
-        std::vector<MemoryLocation> * stack_frame_heap = new std::vector<MemoryLocation>();
-        memcpy(stack_frame_heap, &stack_frame, sizeof(stack_frame));
-        stack_frame_update->SetClientData(stack_frame_heap);
+        MemoryLocation * stack_frame_array = stack_frame.size() ? (MemoryLocation *) malloc(sizeof(MemoryLocation) * stack_frame.size()) : nullptr;
+        for (int index = 0; index < stack_frame.size(); index++) {
+          memcpy(stack_frame_array + index, &stack_frame[index], sizeof(MemoryLocation));
+        }
+        stack_frame_update->SetClientData(stack_frame_array);
+        stack_frame_update->SetExtraLong(stack_frame.size());
 
         // Send events to GUI application
         handler->QueueEvent(status_bar_update);

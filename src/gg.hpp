@@ -200,7 +200,7 @@ class GDBStackPanel : public wxPanel {
   GDBStackPanel(wxWindow * parent);
 
   // Sets the grid of the stack frame.
-  void SetStackFrame(std::vector<MemoryLocation> stack_frame);
+  void SetStackFrame(MemoryLocation * stack_frame, long stack_frame_size);
 };
 
 // GUI top level display frame.
@@ -255,8 +255,9 @@ class GDBFrame : public wxFrame {
   }
 
   void DoStackFrameUpdate(wxCommandEvent & event) {
-    auto data = (std::vector<MemoryLocation> *) event.GetClientData();
-    stackPanel->SetStackFrame(*data);
+    MemoryLocation * data = (MemoryLocation *) event.GetClientData();
+    stackPanel->SetStackFrame(data, event.GetExtraLong());
+    delete data;
   }
 
   // Macro to specify that this frame has events that need binding

@@ -2,6 +2,7 @@
 #include <wx/gbsizer.h>
 #include <wx/grid.h>
 #include <wx/dataview.h>
+#include <sstream>
 
 #include "gg.hpp" 
 
@@ -170,15 +171,35 @@ GDBStackPanel::GDBStackPanel(wxWindow * parent) : wxPanel(parent, wxID_ANY) {
 
   grid = new wxGrid(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
   grid->CreateGrid(GG_GRID_ROWS, 5);
+  grid->SetColLabelValue(0, "Address\t\t");
+  grid->SetColLabelValue(1, "*(Address + 0)\t\t");
+  grid->SetColLabelValue(2, "*(Address + 1)\t\t");
+  grid->SetColLabelValue(3, "*(Address + 2)\t\t");
+  grid->SetColLabelValue(4, "*(Address + 3)\t\t");
+  grid->Fit();
   sizer->Add(grid, 1, wxEXPAND | wxALL, 5);
 }
 
-void GDBStackPanel::SetStackFrame(std::vector<MemoryLocation> stack_frame) {
+void GDBStackPanel::SetStackFrame(MemoryLocation * stack_frame, long stack_frame_size) {
     if (grid->GetNumberRows()) {
       grid->DeleteRows(0, grid->GetNumberRows());
     }
-    if (stack_frame.size()) {
-      grid->AppendRows(stack_frame.size() / 4);
+    if (stack_frame_size) {
+      grid->AppendRows(stack_frame_size / 4);
+
+      for (int index = 0; index < stack_frame_size; index++) {
+        MemoryLocation * stack_value = stack_frame + index;
+        long row =  index / 4;
+        long col = index % 4 + 1;
+        if (index % 4 == 0) {
+          std::stringstream address;
+          address << "0x" << std::hex << stack_value->address;
+          grid->SetCellValue(row, 0, address.str());
+        }
+        std::stringstream byte;
+        byte << "0x" << std::hex << stack_value->value;
+        grid->SetCellValue(row, col, byte.str());
+      }
     }
     else {
       grid->AppendRows(GG_GRID_ROWS);

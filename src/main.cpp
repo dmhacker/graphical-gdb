@@ -59,24 +59,13 @@ void update_console_and_gui(GDB & gdb) {
           new wxCommandEvent(GDB_EVT_STACK_FRAME_UPDATE);
 
         // Set contents of events
-        if (gdb.is_running_program()) {
-          status_bar_update->SetString(GDB_STATUS_RUNNING);
-          source_code_update->SetString(gdb.get_source_code());
-          locals_update->SetString(gdb.get_local_variables());
-          params_update->SetString(gdb.get_formal_parameters());
-          assembly_code_update->SetString(gdb.get_assembly_code());
-          registers_update->SetString(gdb.get_registers());
-          stack_frame_update->SetClientData(gdb.get_stack_frame());
-        }
-        else {
-          status_bar_update->SetString(GDB_STATUS_IDLE);
-          source_code_update->SetString(GDB_NO_SOURCE_CODE);
-          locals_update->SetString(GDB_NO_LOCALS);
-          params_update->SetString(GDB_NO_PARAMS);
-          assembly_code_update->SetString(GDB_NO_ASSEMBLY_CODE);
-          registers_update->SetString(GDB_NO_REGISTERS);
-          stack_frame_update->SetClientData(nullptr);
-        }
+        status_bar_update->SetString(gdb.is_running_program() ? GDB_STATUS_RUNNING : GDB_STATUS_IDLE);
+        source_code_update->SetString(gdb.get_source_code());
+        locals_update->SetString(gdb.get_local_variables());
+        params_update->SetString(gdb.get_formal_parameters());
+        assembly_code_update->SetString(gdb.get_assembly_code());
+        registers_update->SetString(gdb.get_registers());
+        stack_frame_update->SetClientData(gdb.get_stack_frame());
 
         // Send events to GUI application
         handler->QueueEvent(status_bar_update);

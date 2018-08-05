@@ -174,7 +174,7 @@ GDBAssemblyPanel::GDBAssemblyPanel(wxWindow * parent) :
   sizer->AddGrowableCol(1, 1);
 }
 
-GDBStackPanel::GDBStackPanel(wxWindow * parent) : wxPanel(parent, wxID_ANY) {
+GDBStackPanel::GDBStackPanel(wxWindow * parent) : wxPanel(parent, wxID_ANY), stack_global(NULL), stack_size(0), stack_top(0) {
   // A simple box sizer should suffice
   wxBoxSizer * sizer = new wxBoxSizer(wxHORIZONTAL);
   SetSizer(sizer);
@@ -206,12 +206,65 @@ void GDBStackPanel::SetStackFrame(MemoryLocation * stack_frame, long stack_frame
 
   // Add new rows if the stack frame size is greater than 0
   if (stack_frame_size) {
-    grid->AppendRows(stack_frame_size / 4);
+    long stack_pointer = stack_frame[0].address;
+    long frame_pointer = stack_pointer + stack_frame_size;
+
+    if (stack_global) {
+      long stack_bottom = stack_top + stack_size;
+
+      long new_stack_top = stack_pointer < stack_top ? stack_pointer : stack_top;
+      long new_stack_bottom = frame_pointer > stack_bottom ? frame_pointer : stack_bottom;
+      long new_stack_size = new_stack_bottom - new_stack_top;
+
+      long * new_stack;
+      int free_old_stack;
+      if (new_stack_top == stack_top && new_stack_bottom == stack_bottom) {
+        new_stack = stack_global;
+        free_old_stack = 0;
+      }
+      else {
+        new_stack = (long *) malloc(new_stack_size * sizeof(long));
+        free_old_stack = 1;
+      }
+
+      for (int index = 0; index < new_stack_size; index++) {
+        long address = new_stack_top + index;
+        if (address >= stack_pointer && address < frame_pointer) {
+          new_stack[index] = stack_frame[address - stack_pointer].value;
+        }
+        else if (address >= stack_top && address < stack_bottom) {
+          new_stack[index] = stack_global[address - stack_top];
+        }
+        else {
+          new_stack[index] = 0;
+        }
+      }
+
+      if (free_old_stack) {
+        delete stack_global;
+      }
+
+      stack_global = new_stack;
+      stack_size = new_stack_size;
+      stack_top = new_stack_top;
+    }
+    else {
+      stack_global = (long *) malloc(stack_frame_size * sizeof(long));
+      stack_size = stack_frame_size;
+      stack_top = stack_frame[0].address;
+
+      for (int index = 0; index < stack_frame_size; index++) {
+        stack_global[index] = stack_frame[index].value;
+      }
+    }
+
+    grid->AppendRows(stack_size / 4);
 
     // Loop through each value on the stack
-    for (int index = 0; index < stack_frame_size; index++) {
-      // A pointer to the stack value 
-      MemoryLocation * stack_value = stack_frame + index;
+    for (int index = 0; index < stack_size; index++) {
+      // Fetch the stack value 
+      long stack_value = stack_global[index];
+      long stack_address = stack_top + index;
 
       // GUI positional arguments: where the value should be displayed 
       long row =  index / 4;
@@ -220,16 +273,27 @@ void GDBStackPanel::SetStackFrame(MemoryLocation * stack_frame, long stack_frame
       // Set the row address & frame pointer offset
       if (col == 0) {
         grid->SetRowLabelValue(row, long_to_string(index - stack_frame_size, 0)); 
-        grid->SetCellValue(row, 0, long_to_string(stack_value->address, 1)); 
+        grid->SetCellValue(row, 0, long_to_string(stack_top + index, 1)); 
         
         // Highlight the stack pointer
-        if (row == 0) {
-          grid->SetCellBackgroundColour(0, 0, wxColour(255, 255, 124));
+        if (stack_address == stack_pointer) {
+          grid->SetCellBackgroundColour(row, 0, wxColour(255, 255, 124));
+        }
+        else if (stack_address == frame_pointer) {
+          grid->SetCellBackgroundColour(row, 0, wxColour(182, 149, 192));
         }
       }
 
       // Set the cell value to be the stack value
-      grid->SetCellValue(row, col + 1, long_to_string(stack_value->value, 1));
+      grid->SetCellValue(row, col + 1, long_to_string(stack_value, 1));
+    }
+  }
+  else {
+    if (stack_global) {
+      delete stack_global;
+      stack_global = nullptr;
+      stack_size = 0;
+      stack_top = 0;
     }
   }
 }

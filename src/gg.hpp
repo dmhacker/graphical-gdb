@@ -11,7 +11,6 @@
 
 #define GG_FRAME_LINES 19
 #define GG_HISTORY_MAX_LENGTH 1000
-#define GG_GRID_ROWS 20
 
 #define GDB_PROMPT "(gdb) " 
 #define GDB_QUIT "quit"
@@ -196,10 +195,14 @@ class GDBAssemblyPanel : public wxPanel {
 // GUI display for stack frame
 class GDBStackPanel : public wxPanel {
   wxGrid * grid;
+  long * stack_global;
+  long stack_size;
+  long stack_top;
   public:
   GDBStackPanel(wxWindow * parent);
 
   // Sets the grid of the stack frame.
+  // Note that the stack_frame data is deleted after this function call.
   void SetStackFrame(MemoryLocation * stack_frame, long stack_frame_size);
 };
 

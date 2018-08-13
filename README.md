@@ -13,13 +13,7 @@ Any command line arguments given will be passed to GDB.
 
 ## Manual Installation
 
-```
-git clone https://github.com/dmhacker/graphical-gdb
-cd graphical-gdb
-make
-```
-
-The output executable is in the `build` folder.
+To create the output executable, clone the repository and `make` it. The executable will appear in the `build` folder.
 
 These packages are requirements for the build process on Arch Linux:
   * base-devel (build-essential on Debian-based distros)

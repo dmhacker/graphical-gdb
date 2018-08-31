@@ -3,7 +3,7 @@
 <a><img src="https://github.com/dmhacker/graphical-gdb/blob/master/images/terminal.png" align="center" height="323" width="447"></a>
 <a><img src="https://github.com/dmhacker/graphical-gdb/blob/master/images/gui.png" align="center" height="400" width="425"></a>
 
-**gg** (graphical gdb) is a wrapper around GDB that provides you with a visual of your program's current state. 
+A wrapper around GDB that provides you with a visual of your program's current state. 
 
 Running this program opens up a GUI that displays your program's stack, registers, variables, code, and assembly.  
 It will create an instance of GDB in your shell, which you can use to modify the state of your program. 
